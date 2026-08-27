@@ -1,0 +1,1689 @@
+
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Deck Report</title>
+<meta name="description" content="Report de problemas da area do deck: casa, foto carimbada e mensagem pronta pro WhatsApp.">
+<meta name="theme-color" content="#0C6F79" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#0B1211" media="(prefers-color-scheme: dark)">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Deck Report">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="robots" content="noindex, nofollow">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="icon-180.png">
+<link rel="icon" href="icon-180.png">
+<style>*{-webkit-tap-highlight-color:transparent}</style>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600&family=Barlow+Semi+Condensed:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap">
+
+<style>
+/* ---------- tokens: light (bare :root) ---------- */
+:root{
+  --ground:#EEF2F1;
+  --surface:#FFFFFF;
+  --surface-2:#E3EAE9;
+  --ink:#0F1E1D;
+  --ink-2:#4E605E;
+  --ink-3:#7A8C8A;
+  --line:#CFDAD8;
+  --line-strong:#AFC0BD;
+  --accent:#0C6F79;
+  --accent-soft:#D6ECEE;
+  --accent-ink:#FFFFFF;
+  --crit:#A93B2C;
+  --crit-soft:#F7E1DD;
+  --warn:#9A6410;
+  --warn-soft:#F8ECD6;
+  --ok:#2C7355;
+  --shadow:0 1px 2px rgba(15,30,29,.08), 0 8px 24px -12px rgba(15,30,29,.28);
+
+  --r-s:6px; --r-m:10px; --r-l:16px;
+  --pad:16px;
+  --tap:52px;
+}
+/* ---------- tokens: dark via OS (only when not explicitly light) ---------- */
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --ground:#0B1211;
+    --surface:#131C1B;
+    --surface-2:#1C2726;
+    --ink:#E6EFED;
+    --ink-2:#9AACA9;
+    --ink-3:#71837F;
+    --line:#25322F;
+    --line-strong:#3A4A47;
+    --accent:#3FBFC7;
+    --accent-soft:#123033;
+    --accent-ink:#05201F;
+    --crit:#E4756A;
+    --crit-soft:#2E1815;
+    --warn:#DFA847;
+    --warn-soft:#2C2113;
+    --ok:#57BB8D;
+    --shadow:0 1px 2px rgba(0,0,0,.5), 0 10px 28px -14px rgba(0,0,0,.8);
+  }
+}
+/* ---------- tokens: dark via explicit toggle ---------- */
+:root[data-theme="dark"]{
+  --ground:#0B1211;
+  --surface:#131C1B;
+  --surface-2:#1C2726;
+  --ink:#E6EFED;
+  --ink-2:#9AACA9;
+  --ink-3:#71837F;
+  --line:#25322F;
+  --line-strong:#3A4A47;
+  --accent:#3FBFC7;
+  --accent-soft:#123033;
+  --accent-ink:#05201F;
+  --crit:#E4756A;
+  --crit-soft:#2E1815;
+  --warn:#DFA847;
+  --warn-soft:#2C2113;
+  --ok:#57BB8D;
+  --shadow:0 1px 2px rgba(0,0,0,.5), 0 10px 28px -14px rgba(0,0,0,.8);
+}
+
+*{box-sizing:border-box}
+body{
+  margin:0;
+  background:var(--ground);
+  color:var(--ink);
+  font-family:"Barlow",-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;
+  font-size:16px;
+  line-height:1.45;
+  -webkit-text-size-adjust:100%;
+}
+.wrap{max-width:560px;margin:0 auto;padding:0 var(--pad) 180px}
+
+/* ---------- header ---------- */
+header{
+  position:sticky;top:0;z-index:20;
+  background:var(--ground);
+  border-bottom:1px solid var(--line);
+  margin:0 calc(var(--pad) * -1);
+  padding:14px var(--pad) 12px;
+  display:flex;align-items:center;gap:12px;
+}
+.mark{
+  width:38px;height:38px;flex:none;border-radius:var(--r-m);
+  background:var(--accent);color:var(--accent-ink);
+  display:grid;place-items:center;
+  font-family:"Barlow Semi Condensed",sans-serif;font-weight:700;font-size:19px;
+  letter-spacing:.02em;
+}
+h1{
+  font-family:"Barlow Semi Condensed",sans-serif;
+  font-weight:700;font-size:22px;line-height:1.05;margin:0;
+  letter-spacing:.01em;text-wrap:balance;
+}
+.clock{
+  font-family:"IBM Plex Mono",ui-monospace,monospace;
+  font-size:12px;color:var(--ink-2);font-variant-numeric:tabular-nums;
+  display:block;margin-top:2px;
+}
+.icon-btn{
+  margin-left:auto;flex:none;
+  width:40px;height:40px;border-radius:var(--r-m);
+  border:1px solid var(--line);background:var(--surface);color:var(--ink-2);
+  font-size:18px;cursor:pointer;display:grid;place-items:center;
+}
+.icon-btn:active{background:var(--surface-2)}
+
+/* ---------- sections ---------- */
+section{margin-top:26px}
+.lbl{
+  display:flex;align-items:baseline;gap:8px;margin-bottom:10px;
+}
+.lbl b{
+  font-family:"Barlow Semi Condensed",sans-serif;
+  font-weight:700;font-size:12px;letter-spacing:.13em;text-transform:uppercase;
+  color:var(--ink-2);
+}
+.lbl i{font-style:normal;font-size:12px;color:var(--ink-3)}
+.step{
+  font-family:"IBM Plex Mono",monospace;font-size:11px;
+  color:var(--accent);border:1px solid var(--line-strong);
+  border-radius:99px;padding:1px 7px;
+}
+
+/* ---------- address ---------- */
+.addr-row{display:flex;flex-wrap:wrap;gap:8px}
+.search{
+  width:100%;min-height:48px;padding:11px 14px;
+  border:1px solid var(--line);border-radius:var(--r-m);
+  background:var(--surface);color:var(--ink);
+  font-family:inherit;font-size:16px;margin-bottom:10px;
+  -webkit-appearance:none;appearance:none;
+}
+.search::-webkit-search-cancel-button{-webkit-appearance:none;appearance:none}
+.addr-line{display:flex;width:100%;gap:8px;align-items:stretch}
+.addr{
+  flex:1;min-height:var(--tap);
+  display:flex;align-items:center;gap:10px;
+  padding:10px 14px;text-align:left;
+  border:1px solid var(--line);border-radius:var(--r-m);
+  background:var(--surface);color:var(--ink);
+  font-family:inherit;font-size:16px;font-weight:500;cursor:pointer;
+}
+.addr .pin{font-family:"IBM Plex Mono",monospace;font-size:11px;color:var(--ink-3);margin-left:auto;flex:none}
+.addr[aria-pressed="true"]{
+  border-color:var(--accent);background:var(--accent-soft);
+  box-shadow:inset 3px 0 0 var(--accent);
+}
+.addr[aria-pressed="true"] .pin{color:var(--accent)}
+.kill{
+  flex:none;width:52px;align-self:stretch;border-radius:var(--r-m);
+  border:1px solid var(--crit);background:var(--crit-soft);color:var(--crit);
+  font-size:20px;line-height:1;cursor:pointer;display:none;
+}
+body.editing .kill{display:block}
+.mini-row{display:flex;gap:8px;margin-top:8px;flex-wrap:wrap}
+.mini{
+  flex:1 1 0;min-width:120px;min-height:44px;
+  border:1px dashed var(--line-strong);border-radius:var(--r-m);
+  background:transparent;color:var(--ink-2);
+  font-family:"Barlow Semi Condensed",sans-serif;font-weight:600;font-size:14px;
+  letter-spacing:.04em;text-transform:uppercase;cursor:pointer;
+}
+.mini:active{background:var(--surface-2)}
+.empty{
+  border:1px dashed var(--line-strong);border-radius:var(--r-m);
+  padding:18px 14px;color:var(--ink-2);font-size:14px;text-align:center;
+}
+
+.ord{
+  flex:none;width:23px;height:23px;border-radius:99px;
+  display:grid;place-items:center;
+  background:var(--surface-2);color:var(--ink-2);
+  font-family:"IBM Plex Mono",monospace;font-size:11px;
+  font-variant-numeric:tabular-nums;
+}
+.addr[aria-pressed="true"] .ord{background:var(--accent);color:var(--accent-ink)}
+.addr.done{opacity:.5}
+.grp{
+  width:100%;margin:12px 0 -2px;
+  font-family:"Barlow Semi Condensed",sans-serif;font-weight:700;font-size:11px;
+  letter-spacing:.13em;text-transform:uppercase;color:var(--ink-3);
+}
+.grp:first-child{margin-top:0}
+.wide{flex:1 1 100%}
+
+/* ---------- issues ---------- */
+.issues{display:flex;flex-direction:column;gap:8px}
+.issue{
+  display:flex;align-items:stretch;gap:0;
+  border:1px solid var(--line);border-radius:var(--r-m);
+  background:var(--surface);overflow:hidden;
+}
+.issue.on{border-color:var(--pick);background:var(--pick-soft)}
+.issue.sev-crit{--pick:var(--crit);--pick-soft:var(--crit-soft)}
+.issue.sev-warn{--pick:var(--warn);--pick-soft:var(--warn-soft)}
+.issue .name{
+  flex:1;min-height:var(--tap);
+  display:flex;flex-direction:column;justify-content:center;gap:1px;
+  padding:8px 14px;text-align:left;
+  border:0;background:transparent;color:var(--ink);
+  font-family:inherit;font-size:16px;font-weight:500;cursor:pointer;
+}
+.issue.on .name{color:var(--pick);font-weight:600}
+.issue .name small{
+  font-size:12px;font-weight:400;color:var(--ink-3);
+  font-family:"Barlow Semi Condensed",sans-serif;letter-spacing:.02em;
+}
+.issue.on .name small{color:var(--pick);opacity:.75}
+.qty{display:none;align-items:center;border-left:1px solid var(--line)}
+.issue.on .qty{display:flex}
+.qty button{
+  width:42px;align-self:stretch;
+  border:0;background:transparent;color:var(--pick);
+  font-size:20px;font-weight:600;cursor:pointer;font-family:inherit;
+}
+.qty span{
+  min-width:26px;text-align:center;
+  font-family:"IBM Plex Mono",monospace;font-size:15px;font-weight:500;
+  font-variant-numeric:tabular-nums;color:var(--pick);
+}
+
+/* ---------- fotos ---------- */
+.shots{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:8px;margin-top:10px}
+.shot{position:relative;border-radius:var(--r-m);overflow:hidden;background:#0B1211;aspect-ratio:3/4}
+.shot img{width:100%;height:100%;object-fit:contain;display:block;cursor:zoom-in}
+.shot button{
+  position:absolute;top:5px;right:5px;
+  width:28px;height:28px;border-radius:99px;border:0;
+  background:rgba(8,16,15,.72);color:#fff;font-size:15px;line-height:1;cursor:pointer;
+}
+.shot span{
+  position:absolute;left:5px;right:38px;bottom:5px;
+  background:rgba(8,16,15,.82);color:#fff;
+  font-family:"IBM Plex Mono",monospace;font-size:9px;line-height:1.3;
+  padding:3px 6px;border-radius:var(--r-s);
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+}
+.pic-big{width:100%;border-radius:var(--r-m);display:block;background:#0B1211}
+.warnbox{
+  border:1px solid var(--warn);background:var(--warn-soft);color:var(--warn);
+  border-radius:var(--r-m);padding:10px 12px;margin-top:8px;font-size:13px;
+}
+
+/* ---------- note + fields ---------- */
+textarea,input[type="text"],input[type="tel"]{
+  width:100%;padding:12px 14px;
+  border:1px solid var(--line);border-radius:var(--r-m);
+  background:var(--surface);color:var(--ink);
+  font-family:inherit;font-size:16px;line-height:1.4;
+  resize:vertical;
+}
+textarea:focus,input:focus,button:focus-visible,a:focus-visible{
+  outline:2px solid var(--accent);outline-offset:2px;
+}
+#note{min-height:76px}
+
+/* ---------- preview ---------- */
+.preview{
+  border:1px solid var(--line);border-radius:var(--r-l);
+  background:var(--surface);box-shadow:var(--shadow);
+  overflow:hidden;
+}
+.preview .bar{
+  display:flex;align-items:center;gap:6px;
+  padding:8px 10px 8px 14px;border-bottom:1px solid var(--line);
+  background:var(--surface-2);
+}
+.preview .bar b{
+  font-family:"Barlow Semi Condensed",sans-serif;font-size:11px;
+  letter-spacing:.13em;text-transform:uppercase;color:var(--ink-2);font-weight:700;
+}
+.langs{margin-left:auto;display:flex;gap:4px}
+.langs button{
+  min-width:38px;height:30px;border-radius:var(--r-s);
+  border:1px solid var(--line);background:transparent;color:var(--ink-2);
+  font-family:"IBM Plex Mono",monospace;font-size:11px;cursor:pointer;
+}
+.langs button[aria-pressed="true"]{
+  background:var(--accent);border-color:var(--accent);color:var(--accent-ink);
+}
+#msg{
+  border:0;border-radius:0;background:transparent;
+  font-family:"IBM Plex Mono",ui-monospace,monospace;
+  font-size:13px;line-height:1.55;min-height:190px;
+}
+#msg:focus{outline-offset:-2px}
+
+/* ---------- action bar ---------- */
+.bar-fixed{
+  position:fixed;left:0;right:0;bottom:0;z-index:30;
+  background:linear-gradient(to top,var(--ground) 72%,transparent);
+  padding:14px var(--pad) calc(14px + env(safe-area-inset-bottom));
+}
+.bar-inner{max-width:560px;margin:0 auto;display:flex;gap:8px}
+.btn{
+  flex:1;min-height:54px;
+  display:flex;align-items:center;justify-content:center;gap:8px;
+  border-radius:var(--r-m);border:1px solid transparent;
+  font-family:"Barlow Semi Condensed",sans-serif;font-weight:700;
+  font-size:15px;letter-spacing:.06em;text-transform:uppercase;
+  text-decoration:none;cursor:pointer;
+}
+.btn-primary{background:var(--accent);color:var(--accent-ink)}
+.btn-primary:active{filter:brightness(.92)}
+.btn-ghost{background:var(--surface);border-color:var(--line-strong);color:var(--ink)}
+.btn-ghost:active{background:var(--surface-2)}
+.btn[aria-disabled="true"]{opacity:.4;pointer-events:none}
+.btn[hidden]{display:none}
+
+/* ---------- history ---------- */
+.hist{display:flex;flex-direction:column;gap:6px}
+.hist div{
+  display:flex;gap:10px;align-items:baseline;
+  padding:9px 12px;border:1px solid var(--line);border-radius:var(--r-s);
+  background:var(--surface);font-size:14px;
+}
+.hist time{
+  font-family:"IBM Plex Mono",monospace;font-size:11px;color:var(--ink-3);
+  flex:none;font-variant-numeric:tabular-nums;
+}
+.hist b{font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.hist i{font-style:normal;margin-left:auto;flex:none;color:var(--ink-3);font-size:12px}
+.hist .rep{
+  flex:none;font-family:"IBM Plex Mono",monospace;font-size:11px;
+  color:var(--crit);border:1px solid var(--crit);border-radius:99px;
+  padding:1px 7px;font-variant-numeric:tabular-nums;
+}
+.res{
+  flex:none;width:32px;height:32px;margin:-4px -4px -4px 0;
+  border:1px solid var(--line);border-radius:var(--r-s);
+  background:transparent;color:var(--ok);
+  font-size:14px;line-height:1;cursor:pointer;
+}
+.res:active{background:var(--surface-2)}
+
+/* ---------- settings sheet ---------- */
+.ovl{
+  position:fixed;inset:0;z-index:60;
+  background:rgba(4,12,11,.66);
+  display:flex;align-items:flex-start;justify-content:center;
+  overflow-y:auto;-webkit-overflow-scrolling:touch;
+  padding:16px;
+}
+.ovl[hidden]{display:none}
+.ovl > .sheet{width:100%;max-width:560px;margin:auto 0}
+.sheet{
+  background:var(--surface);border:1px solid var(--line);
+  border-radius:var(--r-l);padding:20px;
+  box-shadow:var(--shadow);
+}
+.sheet h2{
+  font-family:"Barlow Semi Condensed",sans-serif;font-size:20px;
+  margin:0 0 4px;font-weight:700;
+}
+.sheet p{margin:0 0 18px;font-size:14px;color:var(--ink-2)}
+.field{margin-bottom:14px}
+.field label{
+  display:block;margin-bottom:5px;
+  font-family:"Barlow Semi Condensed",sans-serif;font-weight:600;font-size:12px;
+  letter-spacing:.1em;text-transform:uppercase;color:var(--ink-2);
+}
+.field small{display:block;margin-top:5px;font-size:12px;color:var(--ink-3)}
+.toast{
+  position:fixed;left:50%;bottom:96px;transform:translateX(-50%) translateY(8px);
+  background:var(--ink);color:var(--ground);
+  padding:10px 18px;border-radius:99px;font-size:14px;font-weight:500;
+  opacity:0;pointer-events:none;transition:opacity .18s,transform .18s;z-index:40;
+  white-space:nowrap;max-width:90vw;
+}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+@media (prefers-reduced-motion:reduce){.toast{transition:none}}
+</style>
+
+<div class="wrap">
+  <header>
+    <div class="mark">FF</div>
+    <div>
+      <h1>Deck Report</h1>
+      <span class="clock" id="clock">—</span>
+    </div>
+    <button class="icon-btn" id="openSettings" title="Ajustes / Settings" aria-label="Ajustes">⚙</button>
+  </header>
+
+  <section>
+    <div class="lbl"><span class="step">1</span><b>Endereço</b><i>toque para escolher</i></div>
+    <input type="search" class="search" id="addrSearch" hidden
+           placeholder="Buscar casa — ex.: 2924 ou penelope"
+           autocomplete="off" autocorrect="off" autocapitalize="off">
+    <div class="addr-row" id="addrList"></div>
+    <div class="mini-row">
+      <button type="button" class="mini wide" id="pasteRoute">📋 Colar rota do Skimmer</button>
+    </div>
+    <div class="mini-row">
+      <button type="button" class="mini" id="nextStop" hidden>Próxima casa ▸</button>
+      <button type="button" class="mini" id="addAddr">+ Novo</button>
+      <button type="button" class="mini" id="editAddr">Apagar casas</button>
+    </div>
+  </section>
+
+  <section>
+    <div class="lbl"><span class="step">2</span><b>O que encontrei</b><i>toque, use −/+ pra quantidade</i></div>
+    <div class="issues" id="issueList"></div>
+    <div class="mini-row"><button type="button" class="mini wide" id="addCustom">+ Outro problema</button></div>
+  </section>
+
+  <section id="ledgerWrap" hidden>
+    <div class="lbl"><b>Já reportado nesta casa</b><i>toque em ✓ quando consertarem</i></div>
+    <div class="hist" id="ledger"></div>
+  </section>
+
+  <section>
+    <div class="lbl"><span class="step">3</span><b>Fotos</b><i>carimbo automático</i></div>
+    <div class="mini-row">
+      <button class="mini wide" id="camBtn">📷 Tirar foto com carimbo</button>
+    </div>
+    <input type="file" accept="image/*" capture="environment" multiple id="camIn" hidden>
+    <div class="shots" id="shots"></div>
+    <div id="camWarn"></div>
+  </section>
+
+  <section>
+    <div class="lbl"><span class="step">4</span><b>Observação</b><i>opcional</i></div>
+    <textarea id="note" placeholder="Ex.: perna da cadeira torta, perto da escada da piscina"></textarea>
+  </section>
+
+  <section>
+    <div class="lbl"><span class="step">5</span><b>Mensagem pronta</b><i>copie e cole no WhatsApp</i></div>
+    <div class="preview">
+      <div class="bar">
+        <b>Preview</b>
+        <div class="langs" role="group" aria-label="Idioma da mensagem">
+          <button data-lang="en" aria-pressed="true">EN</button>
+          <button data-lang="pt" aria-pressed="false">PT</button>
+        </div>
+      </div>
+      <textarea id="msg" spellcheck="false" aria-label="Texto do report"></textarea>
+    </div>
+    <div class="mini-row">
+      <button class="mini" id="clearBtn">Limpar report</button>
+    </div>
+  </section>
+
+  <section id="histWrap" hidden>
+    <div class="lbl"><b>Últimos reports</b><i>fica só no seu celular</i></div>
+    <div class="hist" id="hist"></div>
+  </section>
+</div>
+
+<div class="bar-fixed">
+  <div class="bar-inner">
+    <button type="button" class="btn btn-ghost" id="copyBtn">Copiar texto</button>
+    <a class="btn btn-primary" id="waBtn" target="_blank" rel="noopener">WhatsApp</a>
+    <button type="button" class="btn btn-primary" id="sendShots" hidden>📤 Enviar fotos</button>
+  </div>
+</div>
+
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<div class="ovl" id="ovlRoute" hidden>
+  <div class="sheet">
+    <h2>Rota de hoje</h2>
+    <p>Print as telas da rota &rarr; segure no texto do print e copie (Live Text) &rarr; cole <b>tudo aqui, um embaixo do outro</b>. Pode repetir casa, vir fora de ordem e vir com menu e status: eu junto pelo n&uacute;mero da parada.</p>
+    <div class="field">
+      <textarea id="routeText" rows="9" placeholder="Cole aqui o texto do print da rota"></textarea>
+      <small id="routeHint">Depois de colar, toque em <b>Limpar lista</b> e confira antes de montar.</small>
+    </div>
+    <div class="bar-inner">
+      <button type="button" class="btn btn-ghost" id="cleanRoute">Limpar lista</button>
+      <button type="button" class="btn btn-primary" id="doRoute">Montar rota</button>
+    </div>
+    <div class="mini-row">
+      <button type="button" class="mini wide" id="routeCancel">Cancelar</button>
+    </div>
+  </div>
+</div>
+
+<div class="ovl" id="ovlPic" hidden>
+  <div class="sheet">
+    <h2>Confira o carimbo</h2>
+    <p id="picHelp">Para salvar em Fotos: <b>segure o dedo na imagem</b> e escolha Salvar / Adicionar &agrave;s Fotos.</p>
+    <img class="pic-big" id="picBig" alt="Foto carimbada">
+    <small id="picCount"></small>
+    <div class="mini-row">
+      <button type="button" class="mini" id="picPrev" hidden>&#9666; Anterior</button>
+      <button type="button" class="mini" id="picNext" hidden>Pr&oacute;xima &#9656;</button>
+    </div>
+    <div class="mini-row">
+      <button type="button" class="mini wide" id="picClose">Fechar</button>
+    </div>
+  </div>
+</div>
+
+<div class="ovl" id="ovlAsk" hidden>
+  <div class="sheet">
+    <h2 id="askTitle">.</h2>
+    <p id="askHelp">.</p>
+    <div class="field">
+      <input type="text" id="askInput" autocomplete="off" autocapitalize="words">
+    </div>
+    <div class="bar-inner">
+      <button type="button" class="btn btn-ghost" id="askCancel">Cancelar</button>
+      <button type="button" class="btn btn-primary" id="askOk">Adicionar</button>
+    </div>
+  </div>
+</div>
+
+<div class="ovl" id="ovlSet" hidden>
+  <div class="sheet">
+    <h2>Ajustes</h2>
+    <p>Fica salvo neste celular. Nada &eacute; enviado pra lugar nenhum.</p>
+
+    <div class="field">
+      <label for="fName">Seu nome / Your name</label>
+      <input type="text" id="fName" placeholder="Dayvson &mdash; Deck">
+    </div>
+
+    <div class="field">
+      <label for="fPhone">WhatsApp do supervisor</label>
+      <input type="tel" id="fPhone" placeholder="+1 863 555 0100">
+      <small>S&oacute; n&uacute;meros com pa&iacute;s. Se o report vai pra um <b>grupo</b>, deixe vazio e use "Copiar texto".</small>
+    </div>
+
+    <div class="field">
+      <label for="fAddrs">Endere&ccedil;os salvos</label>
+      <textarea id="fAddrs" rows="7" placeholder="Um por linha"></textarea>
+      <small>Um endere&ccedil;o por linha. Apagar aqui apaga da lista.</small>
+    </div>
+
+    <div class="field">
+      <label for="backupBtn">Backup</label>
+      <button type="button" class="mini wide" id="backupBtn">Ver link com meus endere&ccedil;os</button>
+      <small>Salve o link nos favoritos. Se o celular limpar os dados, o link traz tudo de volta.</small>
+      <textarea id="backupOut" rows="3" hidden readonly></textarea>
+    </div>
+
+    <div class="bar-inner">
+      <button type="button" class="btn btn-ghost" id="setClose">Fechar</button>
+      <button type="button" class="btn btn-primary" id="setSave">Salvar</button>
+    </div>
+  </div>
+</div>
+
+<script>
+(function(){
+  "use strict";
+
+  var KEY = "ffdeck.v1";
+
+  var ISSUES = [
+    {k:"chair",    en:"Broken chair",                    pt:"Cadeira quebrada",                 sev:"crit"},
+    {k:"lounger",  en:"Broken lounger",                  pt:"Espreguiçadeira quebrada",         sev:"crit"},
+    {k:"screen",   en:"Screen enclosure torn",           pt:"Tela da cobertura rasgada",        sev:"crit"},
+    {k:"table",    en:"Broken table",                    pt:"Mesa quebrada",                    sev:"crit"},
+    {k:"umbrella", en:"Umbrella damaged",                pt:"Guarda-sol danificado",            sev:"crit"},
+    {k:"light",    en:"Pool / deck light out",           pt:"Luz da piscina/deck queimada",     sev:"crit"},
+    {k:"gate",     en:"Gate or door not closing",        pt:"Portão/porta não fecha",           sev:"crit"},
+    {k:"grill",    en:"BBQ grill used — needs cleaning", pt:"Churrasqueira usada — pedido de limpeza", sev:"warn"},
+    {k:"cushion",  en:"Cushion missing or stained",      pt:"Almofada faltando ou manchada",    sev:"warn"},
+    {k:"trash",    en:"Trash / debris left on deck",     pt:"Lixo/sujeira deixada no deck",     sev:"warn"}
+  ];
+
+  /* Pedido de servico, nao defeito: cada vez e uma vez legitima. Nao conta reincidencia. */
+  var NOCOUNT = { grill:1 };
+
+  var S = {
+    lang:"en", name:"", phone:"",
+    addresses:[], current:null,
+    route:[], done:[], showAll:false, q:"",
+    counts:{}, custom:[], note:"", shots:[],
+    ledger:{}, history:[]
+  };
+
+  /* trava pra não contar duas vezes o mesmo report (Copiar + WhatsApp) */
+  var logged = false;
+  function unlock(){ logged = false; }
+
+  var $ = function(id){ return document.getElementById(id); };
+
+  /* ---------------------------------------------------------------
+     Casas lidas dos prints da rota de domingo, 23/08/2026 ("Dayvson DECK").
+     Entram como biblioteca inicial SO quando o app abre vazio pela
+     primeira vez. Nunca sobrescrevem o que o usuario ja tem.
+     Editaveis em Ajustes.
+     --------------------------------------------------------------- */
+  var SEED = [];   // vazio no site publico: as casas entram pelo link privado
+
+  /* ---------- storage (defensive: sandbox may block it) ---------- */
+  function load(){
+    var raw = null;
+    try { raw = localStorage.getItem(KEY); } catch(e){}
+
+    if (raw){
+      try {
+        var d = JSON.parse(raw);
+        S.name = d.name || "";
+        S.phone = d.phone || "";
+        S.lang = d.lang || "en";
+        S.addresses = Array.isArray(d.addresses) ? d.addresses : [];
+        S.history = Array.isArray(d.history) ? d.history : [];
+        S.route = Array.isArray(d.route) ? d.route : [];
+        S.done = Array.isArray(d.done) ? d.done : [];
+        S.ledger = (d.ledger && typeof d.ledger === "object") ? d.ledger : {};
+        Object.keys(S.ledger).forEach(function(k){
+          if (NOCOUNT[k.split("|")[1]]) delete S.ledger[k];
+        });
+      } catch(e){}
+    } else {
+      semear();
+    }
+
+    /* Link de backup: SOMA as casas, nunca apaga o que ja existe aqui.
+       Depois limpa o hash pra nao reimportar a cada abertura. */
+    var h = location.hash.slice(1);
+    if (h.length > 3){
+      try {
+        var imp = JSON.parse(decodeURIComponent(escape(atob(h))));
+        if (imp && Array.isArray(imp.addresses)){
+          var antes = S.addresses.length;
+          imp.addresses.forEach(function(a){ if (a && a.label) addAddress(a.label); });
+          if (!S.name && imp.name) S.name = imp.name;
+          if (!S.phone && imp.phone) S.phone = imp.phone;
+          if (imp.lang) S.lang = imp.lang;
+          save();
+          setTimeout(function(){
+            toast((S.addresses.length - antes) + " casas importadas");
+          }, 400);
+        }
+      } catch(e){}
+      try { history.replaceState(null, "", location.pathname + location.search); } catch(e){}
+    }
+  }
+
+  function semear(){
+    SEED.forEach(function(l, i){
+      S.addresses.push({id:"seed" + i, label:l, lat:null, lng:null});
+    });
+    save();
+  }
+
+  function save(){
+    try {
+      localStorage.setItem(KEY, JSON.stringify({
+        name:S.name, phone:S.phone, lang:S.lang,
+        addresses:S.addresses, route:S.route, done:S.done,
+        ledger:S.ledger, history:S.history.slice(0,12)
+      }));
+    } catch(e){}
+  }
+
+  /* ---------- clock ---------- */
+  function stamp(lang){
+    var d = new Date();
+    var loc = lang === "pt" ? "pt-BR" : "en-US";
+    var day = d.toLocaleDateString(loc, {day:"2-digit", month:"short", year:"numeric"});
+    var hr  = d.toLocaleTimeString(loc, {hour:"2-digit", minute:"2-digit"});
+    return day + " · " + hr;
+  }
+  function tickClock(){ $("clock").textContent = stamp(S.lang); }
+
+  /* ---------- addresses ---------- */
+  function grpLabel(text){
+    var h = document.createElement("div");
+    h.className = "grp";
+    h.textContent = text;
+    return h;
+  }
+
+  function addrBtn(a, ord){
+    var row = document.createElement("div");
+    row.className = "addr-line";
+
+    var b = document.createElement("button");
+    b.type = "button";
+    b.className = "addr" + (S.done.indexOf(a.id) > -1 ? " done" : "");
+    b.setAttribute("aria-pressed", String(S.current === a.id));
+    if (ord){
+      var o = document.createElement("span");
+      o.className = "ord";
+      o.textContent = S.done.indexOf(a.id) > -1 ? "✓" : ord;
+      b.appendChild(o);
+    }
+    var label = document.createElement("span");
+    label.textContent = a.label;
+    b.appendChild(label);
+    b.addEventListener("click", function(){
+      S.current = (S.current === a.id) ? null : a.id;
+      unlock(); renderAddrs(); renderLedger(); build();
+    });
+    row.appendChild(b);
+
+    var kill = document.createElement("button");
+    kill.type = "button";
+    kill.className = "kill";
+    kill.textContent = "×";
+    kill.setAttribute("aria-label", "Apagar " + a.label);
+    kill.addEventListener("click", function(){
+      S.addresses = S.addresses.filter(function(x){ return x.id !== a.id; });
+      S.route = S.route.filter(function(x){ return x !== a.id; });
+      if (S.current === a.id) S.current = null;
+      save(); renderAddrs(); renderLedger(); build();
+      toast("Apagado: " + a.label);
+    });
+    row.appendChild(kill);
+
+    return row;
+  }
+
+  function norm(t){
+    return (t || "").toLowerCase()
+      .normalize ? (t || "").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "")
+                 : (t || "").toLowerCase();
+  }
+
+  function renderAddrs(){
+    var box = $("addrList");
+    box.innerHTML = "";
+    $("nextStop").hidden = !S.route.length;
+
+    var busca = $("addrSearch");
+    busca.hidden = S.addresses.length < 8;
+    if (busca.hidden && S.q){ S.q = ""; busca.value = ""; }
+
+    if (!S.addresses.length){
+      var e = document.createElement("div");
+      e.className = "empty";
+      e.textContent = "Nenhuma casa ainda. Cole a rota do Skimmer aqui em cima \u2014 depois da primeira vez, \u00e9 s\u00f3 tocar.";
+      box.appendChild(e);
+      return;
+    }
+
+    /* buscando: lista plana, sem grupo de rota */
+    if (S.q){
+      var q = norm(S.q);
+      var hits = S.addresses.filter(function(a){ return norm(a.label).indexOf(q) > -1; });
+      if (!hits.length){
+        var nada = document.createElement("div");
+        nada.className = "empty";
+        nada.textContent = 'Nenhuma casa com "' + S.q + '".';
+        box.appendChild(nada);
+        var add = document.createElement("button");
+        add.type = "button"; add.className = "mini wide";
+        add.textContent = "+ Salvar \u201c" + S.q + "\u201d como casa nova";
+        add.addEventListener("click", function(){
+          var a = addAddress(S.q);
+          if (!a) return;
+          S.current = a.id;
+          if (S.route.length && S.route.indexOf(a.id) < 0) S.route.push(a.id);
+          S.q = ""; $("addrSearch").value = "";
+          unlock(); save(); renderAddrs(); renderLedger(); build();
+          toast("Salvo: " + a.label);
+        });
+        box.appendChild(add);
+        return;
+      }
+      box.appendChild(grpLabel(hits.length + (hits.length > 1 ? " casas" : " casa")));
+      hits.forEach(function(a){
+        box.appendChild(addrBtn(a, S.route.indexOf(a.id) + 1));
+      });
+      return;
+    }
+
+    var inRoute = [], others = [];
+    S.addresses.forEach(function(a){
+      (S.route.indexOf(a.id) > -1 ? inRoute : others).push(a);
+    });
+    inRoute.sort(function(x, y){ return S.route.indexOf(x.id) - S.route.indexOf(y.id); });
+
+    if (!inRoute.length){
+      others.forEach(function(a){ box.appendChild(addrBtn(a, 0)); });
+      return;
+    }
+
+    box.appendChild(grpLabel("Rota de hoje \u00b7 " + S.done.length + "/" + inRoute.length));
+    inRoute.forEach(function(a, i){ box.appendChild(addrBtn(a, i + 1)); });
+
+    if (!others.length) return;
+    var t = document.createElement("button");
+    t.type = "button";
+    t.className = "mini wide";
+    t.textContent = S.showAll
+      ? "Esconder as outras"
+      : "Ver outras casas salvas (" + others.length + ")";
+    t.addEventListener("click", function(){ S.showAll = !S.showAll; renderAddrs(); });
+    box.appendChild(t);
+    if (S.showAll){
+      box.appendChild(grpLabel("Todas as casas"));
+      others.forEach(function(a){ box.appendChild(addrBtn(a, 0)); });
+    }
+  }
+
+  function addAddress(label, lat, lng){
+    label = (label || "").trim();
+    if (!label) return null;
+    var exists = S.addresses.filter(function(a){
+      return a.label.toLowerCase() === label.toLowerCase();
+    })[0];
+    if (exists){
+      if (lat){ exists.lat = lat; exists.lng = lng; }
+      return exists;
+    }
+    var a = {id:"a" + Date.now() + Math.floor(Math.random() * 999),
+             label:label, lat:lat || null, lng:lng || null};
+    S.addresses.push(a);
+    return a;
+  }
+
+  function currentAddr(){
+    return S.addresses.filter(function(a){ return a.id === S.current; })[0] || null;
+  }
+
+  var STREET = /\b(ct|dr|rd|st|ave|av|ln|way|blvd|cir|pl|ter|loop|trl|pkwy|pt|run|walk|bnd|xing|hwy|sq|court|drive|road|street|avenue|lane|circle|place|terrace|trail|parkway|cove)\b\.?/i;
+
+  /* Lixo de tela do Skimmer + qualquer app de rota */
+  var UI_NOISE = [
+    /^(home|routes?|route list|my route|customers?|clients?|invoices?|billing|more|menu)$/i,
+    /^(today|tomorrow|yesterday)('?s)?( route)?$/i,
+    /^(search|filter|filters|sort|map|list|all|refresh|sync|settings|profile|log ?out|sign ?out)$/i,
+    /^(start|start route|complete|completed|in progress|pending|skip|skipped|done|open|closed)$/i,
+    /^(edit|back|cancel|save|add|new|next|previous|prev|view|show|hide)$/i,
+    /^(notes?|directions?|get directions|navigate|open in maps|photos?|readings?|chemicals?|dosage|checklist)$/i,
+    /^(service|services|work orders?|stops?|jobs?|tasks?)$/i,
+    /^\d+\s*(stops?|jobs?|sites?|pools?|mi|km|miles?|of\s*\d+)$/i,
+    /^\d{1,3}\s*\/\s*\d{1,3}$/,
+    /^\d{1,2}[:.]\d{2}\s*(am|pm)?\s*(\(.*\))?$/i,
+    /^(mon|tue|wed|thu|fri|sat|sun)[a-z]*,?\s/i,
+    /^\d+(\.\d+)?\s*(mi|km)$/i,
+    /^(jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)[a-z]*\s+\d/i
+  ];
+
+  /* Etiquetas de status da rota: NUNCA sao endereco, e nao podem virar prefixo do proximo */
+  var BADGE = [
+    /check ?-? ?out/i, /back to back/i, /guest chegando/i, /sem guest/i,
+    /dono chegando/i, /fazer com cuidado/i, /mid ?stay/i, /\bb2b\b/i
+  ];
+
+  function isNoise(l){
+    var i;
+    for (i = 0; i < UI_NOISE.length; i++) if (UI_NOISE[i].test(l)) return true;
+    for (i = 0; i < BADGE.length; i++)    if (BADGE[i].test(l))    return true;
+    return false;
+  }
+
+  var CITY_TAIL = /^[A-Za-z .'\-]{3,},?\s*(fl|florida)\.?,?\s*\d{0,5}$/i;
+  var JOINED = / \u2014 /;
+  var CUT = /[\u2026]|\.\.\./;
+
+  function looksLikeAddress(l){
+    if (STREET.test(l)) return true;
+    if (/\b\d{5}\b/.test(l)) return true;
+    var m = l.match(/^\d+\s+(.+)$/);
+    if (m && m[1].split(" ").length >= 2) return true;
+    return false;
+  }
+
+  /* Skimmer repete o endereco (negrito truncado + cinza completo).
+     Chave = numero da casa + primeira palavra da rua. */
+  function addrKey(l){
+    var n = l.toLowerCase().replace(CUT, "")
+             .replace(/[^a-z0-9 ]/g, " ").replace(/\s+/g, " ").trim();
+    var m = n.match(/^(\d+)\s+([a-z]+)/);
+    return m ? m[1] + " " + m[2] : n.slice(0, 18);
+  }
+
+  function cleanLabel(l){
+    return l.replace(CUT, "")
+            .replace(/\s*\(\s*\.?\s*\)\s*/g, " ")
+            .replace(/,?\s*(usa|eua|us)\.?\s*$/i, "")
+            .replace(/[\s,]+$/, "")
+            .replace(/\s+/g, " ")
+            .trim();
+  }
+
+  function prep(l){
+    return l.replace(/\u00a0/g, " ")
+            .replace(/^\s*(?:\d{1,2}[.)]|[\u2022\u00b7\u25aa\u25cf>*])\s+/, "")
+            .replace(/\s+\d{1,2}[:.]\d{2}\s*(am|pm)?\s*(\([^)]*\))?\s*$/i, "")
+            .replace(/[|>\u203a\u00bb]+\s*$/, "")
+            .replace(/\s+/g, " ")
+            .trim();
+  }
+
+  /* ---------------------------------------------------------------
+     Texto de print vem sujo. Isto separa endereco de tela, junta o
+     endereco repetido, respeita a numeracao da parada e roda 2x sem
+     estragar o resultado.
+     --------------------------------------------------------------- */
+  function parseRoute(raw){
+    var lines = raw.split(/\r?\n/).map(prep);
+
+    var numeric = 0;
+    lines.forEach(function(l){ if (/^\d+\s+\S/.test(l)) numeric++; });
+    var strict = numeric >= 3;   // formato Skimmer: toda casa comeca com numero
+
+    var items = [], pending = null, ord = null;
+
+    lines.forEach(function(l){
+      var m = l.match(/^(\d{1,3})$/);                       // numero da parada
+      if (m){
+        var v = parseInt(m[1], 10);
+        if (v >= 1 && v <= 200) ord = v;
+        return;
+      }
+      if (l.length < 4 || isNoise(l) || !/[A-Za-z]/.test(l)) return;
+
+      if (JOINED.test(l)){ items.push({label:l, ord:ord}); ord = null; pending = null; return; }
+
+      if (items.length && !/^\d/.test(l) && CITY_TAIL.test(l)){
+        items[items.length - 1].label += ", " + l;
+        return;
+      }
+
+      if (looksLikeAddress(l)){
+        items.push({label: (!strict && pending) ? pending + " \u2014 " + l : l, ord:ord});
+        ord = null; pending = null;
+      } else if (!strict){
+        if (pending) items.push({label:pending, ord:null});
+        pending = l;
+      }
+    });
+    if (!strict && pending) items.push({label:pending, ord:ord});
+
+    // junta as duas linhas do mesmo endereco, ficando com a versao mais completa
+    var best = {}, order = [];
+    items.forEach(function(it){
+      var label = cleanLabel(it.label);
+      if (!label) return;
+      var k = addrKey(label);
+      var score = label.length - (CUT.test(it.label) ? 2 : 0);
+      if (!best[k]){
+        best[k] = {label:label, score:score, ord:it.ord};
+        order.push(k);
+      } else {
+        if (score > best[k].score){ best[k].label = label; best[k].score = score; }
+        if (best[k].ord === null || (it.ord !== null && it.ord < best[k].ord)) best[k].ord = it.ord;
+      }
+    });
+
+    var list = order.map(function(k){ return best[k]; });
+
+    // so reordena se TODA casa tiver numero de parada e nenhum repetir
+    var ords = {}, ok = list.length > 0;
+    list.forEach(function(x){
+      if (typeof x.ord !== "number" || ords[x.ord]) ok = false;
+      else ords[x.ord] = 1;
+    });
+    if (ok) list.sort(function(a, b){ return a.ord - b.ord; });
+
+    return list.map(function(x){ return x.label; });
+  }
+
+  /* ---------- issues ---------- */
+  function renderIssues(){
+    var box = $("issueList");
+    box.innerHTML = "";
+    ISSUES.forEach(function(it){
+      box.appendChild(issueRow(it.k, it.en, it.pt, it.sev, S.counts[it.k] || 0));
+    });
+    S.custom.forEach(function(c, i){
+      box.appendChild(issueRow("custom" + i, c.text, "", c.sev || "crit", c.n, true, i));
+    });
+  }
+
+  function issueRow(key, en, pt, sev, n, isCustom, ci){
+    var row = document.createElement("div");
+    row.className = "issue sev-" + sev + (n > 0 ? " on" : "");
+
+    var nameBtn = document.createElement("button");
+    nameBtn.type = "button";
+    nameBtn.className = "name";
+    nameBtn.appendChild(document.createTextNode(en));
+    if (pt){
+      var s = document.createElement("small");
+      s.textContent = pt;
+      nameBtn.appendChild(s);
+    }
+    nameBtn.addEventListener("click", function(){ setCount(key, n > 0 ? 0 : 1, isCustom, ci); });
+    row.appendChild(nameBtn);
+
+    var qty = document.createElement("div");
+    qty.className = "qty";
+    var minus = document.createElement("button");
+    minus.type = "button"; minus.textContent = "−";
+    minus.setAttribute("aria-label","Menos " + en);
+    minus.addEventListener("click", function(){ setCount(key, Math.max(0, n - 1), isCustom, ci); });
+    var num = document.createElement("span");
+    num.textContent = n;
+    var plus = document.createElement("button");
+    plus.type = "button"; plus.textContent = "+";
+    plus.setAttribute("aria-label","Mais " + en);
+    plus.addEventListener("click", function(){ setCount(key, n + 1, isCustom, ci); });
+    qty.appendChild(minus); qty.appendChild(num); qty.appendChild(plus);
+    row.appendChild(qty);
+    return row;
+  }
+
+  function setCount(key, n, isCustom, ci){
+    if (isCustom){
+      if (n === 0) S.custom.splice(ci, 1);
+      else S.custom[ci].n = n;
+    } else {
+      if (n === 0) delete S.counts[key];
+      else S.counts[key] = n;
+    }
+    unlock(); renderIssues(); build();
+  }
+
+  /* ---------- reincidência: quantas vezes ESTE problema, NESTA casa ---------- */
+  function lkey(addrId, k){ return addrId + "|" + k; }
+  function ckey(text){ return "c:" + text.toLowerCase().replace(/\s+/g," ").trim(); }
+  function today(){ return new Date().toISOString().slice(0, 10); }
+
+  function fmtDay(iso, lang){
+    if (!iso) return "";
+    var d = new Date(iso + "T12:00:00");
+    return d.toLocaleDateString(lang === "pt" ? "pt-BR" : "en-US", {day:"2-digit", month:"short"});
+  }
+
+  function ordinal(n, lang){
+    if (lang === "pt") return n + "º";
+    var t = n % 100;
+    if (t >= 11 && t <= 13) return n + "th";
+    return n + ["th","st","nd","rd","th","th","th","th","th","th"][n % 10];
+  }
+
+  /* ---------- message ---------- */
+  function line(label, n, key, lang){
+    var s = "• " + label + (n > 1 ? " (x" + n + ")" : "");
+    if (NOCOUNT[key]) return s;
+    var e = S.current ? S.ledger[lkey(S.current, key)] : null;
+    var times = (e ? e.n : 0) + 1;
+    if (times < 2) return s;
+    s += lang === "pt"
+      ? "  >> " + ordinal(times, lang) + " report nesta casa"
+      : "  >> " + ordinal(times, lang) + " report at this address";
+    if (e.first) s += lang === "pt" ? " (1º: " + fmtDay(e.first, lang) + ")"
+                                    : " (1st: " + fmtDay(e.first, lang) + ")";
+    return s;
+  }
+
+  function build(){
+    var lang = S.lang;
+    var t = lang === "pt"
+      ? {head:"REPORT DO DECK", fix:"PRECISA REPARO", clean:"PRECISA LIMPEZA",
+         note:"Obs.", by:"Reportado por", photos:"Fotos abaixo (Timestamp Camera).",
+         stamped:"Fotos anexadas — endereço e hora carimbados em cada uma.",
+         noAddr:"[ESCOLHA O ENDEREÇO]"}
+      : {head:"DECK REPORT", fix:"NEEDS REPAIR", clean:"NEEDS CLEANING",
+         note:"Note", by:"Reported by", photos:"Photos below (Timestamp Camera).",
+         stamped:"Photos attached — address and time stamped on each one.",
+         noAddr:"[PICK THE ADDRESS]"};
+
+    var addr = currentAddr();
+    var crit = [], warn = [];
+
+    ISSUES.forEach(function(it){
+      var n = S.counts[it.k] || 0;
+      if (!n) return;
+      (it.sev === "crit" ? crit : warn).push(line(it[lang], n, it.k, lang));
+    });
+    S.custom.forEach(function(c){
+      (c.sev === "crit" ? crit : warn).push(line(c.text, c.n, ckey(c.text), lang));
+    });
+
+    var out = [];
+    out.push(t.head);
+    out.push(addr ? addr.label : t.noAddr);
+    out.push(stamp(lang));
+    if (crit.length){ out.push(""); out.push(t.fix); out = out.concat(crit); }
+    if (warn.length){ out.push(""); out.push(t.clean); out = out.concat(warn); }
+    var note = $("note").value.trim();
+    if (note){ out.push(""); out.push(t.note + ": " + note); }
+    out.push("");
+    if (S.name) out.push(t.by + ": " + S.name);
+    out.push(S.shots.length ? t.stamped : t.photos);
+
+    var text = out.join("\n");
+    $("msg").value = text;
+
+    var ready = !!addr && (crit.length + warn.length) > 0;
+    $("copyBtn").setAttribute("aria-disabled", String(!ready));
+
+    var wa = $("waBtn");
+    var digits = S.phone.replace(/\D/g, "");
+    wa.href = (digits ? "https://wa.me/" + digits : "https://wa.me/") + "?text=" + encodeURIComponent(text);
+    wa.setAttribute("aria-disabled", String(!ready));
+    return text;
+  }
+
+  /* ---------- history ---------- */
+  function renderHist(){
+    var wrap = $("histWrap"), box = $("hist");
+    if (!S.history.length){ wrap.hidden = true; return; }
+    wrap.hidden = false;
+    box.innerHTML = "";
+    S.history.slice(0, 8).forEach(function(h){
+      var d = document.createElement("div");
+      var tm = document.createElement("time");
+      tm.textContent = h.time;
+      var b = document.createElement("b");
+      b.textContent = h.addr;
+      var i = document.createElement("i");
+      i.textContent = h.n + (h.n > 1 ? " itens" : " item");
+      d.appendChild(tm); d.appendChild(b); d.appendChild(i);
+      box.appendChild(d);
+    });
+  }
+
+  function renderLedger(){
+    var wrap = $("ledgerWrap"), box = $("ledger"), addr = currentAddr();
+    box.innerHTML = "";
+    if (!addr){ wrap.hidden = true; return; }
+
+    var rows = [];
+    Object.keys(S.ledger).forEach(function(k){
+      if (k.indexOf(addr.id + "|") !== 0) return;
+      rows.push({key:k, e:S.ledger[k]});
+    });
+    if (!rows.length){ wrap.hidden = true; return; }
+    rows.sort(function(a, b){ return b.e.n - a.e.n; });
+    wrap.hidden = false;
+
+    rows.forEach(function(r){
+      var d = document.createElement("div");
+      var rep = document.createElement("span");
+      rep.className = "rep";
+      rep.textContent = r.e.n + "x";
+      var b = document.createElement("b");
+      b.textContent = labelOf(r.key, r.e);
+      var i = document.createElement("i");
+      i.textContent = fmtDay(r.e.last, S.lang);
+      var btn = document.createElement("button");
+      btn.type = "button"; btn.className = "res"; btn.textContent = "✓";
+      btn.title = "Consertaram — zerar contagem";
+      btn.setAttribute("aria-label", "Marcar como resolvido: " + labelOf(r.key, r.e));
+      btn.addEventListener("click", function(){
+        delete S.ledger[r.key];
+        save(); renderLedger(); build();
+        toast("Zerado — consertaram");
+      });
+      d.appendChild(rep); d.appendChild(b); d.appendChild(i); d.appendChild(btn);
+      box.appendChild(d);
+    });
+  }
+
+  function labelOf(key, e){
+    var k = key.split("|")[1];
+    var known = ISSUES.filter(function(it){ return it.k === k; })[0];
+    return known ? known[S.lang] : (e.label || k.replace(/^c:/, ""));
+  }
+
+  function logSent(){
+    var addr = currentAddr();
+    if (!addr || logged) return;
+
+    var hits = [];
+    ISSUES.forEach(function(it){
+      if (S.counts[it.k]) hits.push({k:it.k, label:it.en});
+    });
+    S.custom.forEach(function(c){ hits.push({k:ckey(c.text), label:c.text}); });
+    if (!hits.length) return;
+
+    logged = true;
+    var day = today();
+    hits.forEach(function(h){
+      if (NOCOUNT[h.k]) return;
+      var key = lkey(addr.id, h.k);
+      var e = S.ledger[key] || {n:0, first:day};
+      e.n += 1; e.last = day; e.label = h.label;
+      S.ledger[key] = e;
+    });
+
+    S.history.unshift({
+      time: new Date().toLocaleTimeString("en-US",{hour:"2-digit",minute:"2-digit"}),
+      addr: addr.label,
+      n: hits.length
+    });
+    S.history = S.history.slice(0, 12);
+    save(); renderHist(); renderLedger();
+  }
+
+  /* ---------------------------------------------------------------
+     FOTO COM CARIMBO
+     Carimba endereco + data/hora na propria imagem, no momento em que
+     a foto entra no app. Substitui o Timestamp Camera SE o supervisor
+     aceitar (ver aviso na tela).
+     --------------------------------------------------------------- */
+  var MAX_PX = 1600;
+  var STALE_MS = 15 * 60 * 1000;   // foto com mais de 15 min nao e "de agora"
+
+  function wrapText(ctx, text, maxW){
+    var words = text.split(" "), lines = [], cur = "";
+    words.forEach(function(w){
+      var t = cur ? cur + " " + w : w;
+      if (ctx.measureText(t).width > maxW && cur){ lines.push(cur); cur = w; }
+      else cur = t;
+    });
+    if (cur) lines.push(cur);
+    return lines.slice(0, 2);
+  }
+
+  function stampPhoto(file, cb){
+    var url = URL.createObjectURL(file);
+    var img = new Image();
+    img.onload = function(){
+      var w = img.naturalWidth, h = img.naturalHeight;
+      var k = Math.min(1, MAX_PX / Math.max(w, h));
+      w = Math.round(w * k); h = Math.round(h * k);
+
+      var cv = document.createElement("canvas");
+      cv.width = w; cv.height = h;
+      var ctx = cv.getContext("2d");
+      ctx.drawImage(img, 0, 0, w, h);
+      URL.revokeObjectURL(url);
+
+      var addr = currentAddr();
+      var pad  = Math.round(w * 0.028);
+      var fs   = Math.max(13, Math.round(w * 0.033));
+      var fsm  = Math.max(11, Math.round(w * 0.026));
+
+      ctx.font = "600 " + fs + "px Barlow, -apple-system, sans-serif";
+      var lines = wrapText(ctx, addr ? addr.label : "SEM ENDERECO", w - pad * 3);
+      var meta  = stamp(S.lang) + (S.name ? "  \u00b7  " + S.name : "");
+
+      var boxH = pad * 2 + lines.length * (fs * 1.22) + fsm * 1.5;
+      var boxY = h - boxH;
+
+      ctx.fillStyle = "rgba(8,16,15,.76)";
+      ctx.fillRect(0, boxY, w, boxH);
+      ctx.fillStyle = "#3FBFC7";
+      ctx.fillRect(0, boxY, Math.round(w * 0.012), boxH);
+
+      ctx.fillStyle = "#FFFFFF";
+      ctx.textBaseline = "top";
+      ctx.font = "600 " + fs + "px Barlow, -apple-system, sans-serif";
+      var y = boxY + pad;
+      lines.forEach(function(l){
+        ctx.fillText(l, pad * 1.6, y);
+        y += fs * 1.22;
+      });
+      ctx.fillStyle = "rgba(255,255,255,.82)";
+      ctx.font = fsm + "px 'IBM Plex Mono', ui-monospace, monospace";
+      ctx.fillText(meta, pad * 1.6, y + 2);
+
+      cv.toBlob(function(blob){
+        if (!blob){ cb(null); return; }
+        var name = "deck-" + today() + "-" + (S.shots.length + 1) + ".jpg";
+        cb({ blob: blob, name: name, url: URL.createObjectURL(blob),
+             stamped: (addr ? addr.label : "SEM ENDERECO") });
+      }, "image/jpeg", 0.85);
+    };
+    img.onerror = function(){ URL.revokeObjectURL(url); cb(null); };
+    img.src = url;
+  }
+
+  function renderShots(){
+    var box = $("shots");
+    box.innerHTML = "";
+    S.shots.forEach(function(sh, i){
+      var d = document.createElement("div");
+      d.className = "shot";
+
+      var im = document.createElement("img");
+      im.src = sh.url;
+      im.alt = "Foto " + (i + 1) + " carimbada com " + sh.stamped;
+      im.addEventListener("click", function(){
+        $("picHelp").innerHTML =
+          "Para salvar em Fotos: <b>segure o dedo na imagem</b> e escolha Adicionar às Fotos.";
+        showPic(i);
+        openOvl("ovlPic");
+      });
+
+      var lb = document.createElement("span");
+      lb.textContent = "\u2713 " + sh.stamped;
+
+      var x = document.createElement("button");
+      x.type = "button"; x.textContent = "\u00d7";
+      x.setAttribute("aria-label", "Remover foto " + (i + 1));
+      x.addEventListener("click", function(){
+        URL.revokeObjectURL(sh.url);
+        S.shots.splice(i, 1);
+        renderShots();
+      });
+
+      d.appendChild(im); d.appendChild(lb); d.appendChild(x);
+      box.appendChild(d);
+    });
+
+    // um unico botao de envio: com foto, ele substitui o do WhatsApp
+    $("sendShots").hidden = !S.shots.length;
+    $("waBtn").hidden = !!S.shots.length;
+    build();
+  }
+
+  function clearShots(){
+    S.shots.forEach(function(sh){ URL.revokeObjectURL(sh.url); });
+    S.shots = [];
+    $("camWarn").innerHTML = "";
+    renderShots();
+  }
+
+  function canShareFiles(){
+    try {
+      if (!navigator.canShare || !navigator.share) return false;
+      var probe = new File([new Blob(["x"], {type:"image/jpeg"})], "p.jpg", {type:"image/jpeg"});
+      return navigator.canShare({ files: [probe] });
+    } catch(e){ return false; }
+  }
+
+  /* ---------- toast ---------- */
+  var toastTimer;
+  function toast(m){
+    var el = $("toast");
+    el.textContent = m;
+    el.classList.add("show");
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(function(){ el.classList.remove("show"); }, 2200);
+  }
+
+  /* ---------- wiring ---------- */
+  $("note").addEventListener("input", build);
+
+  Array.prototype.forEach.call(document.querySelectorAll(".langs button"), function(b){
+    b.addEventListener("click", function(){
+      S.lang = b.dataset.lang;
+      Array.prototype.forEach.call(document.querySelectorAll(".langs button"), function(x){
+        x.setAttribute("aria-pressed", String(x === b));
+      });
+      save(); tickClock(); renderLedger(); build();
+    });
+  });
+
+  $("camBtn").addEventListener("click", function(){
+    if (!currentAddr()){ toast("Escolha a casa antes da foto"); return; }
+    $("camIn").click();
+  });
+
+  $("camIn").addEventListener("change", function(ev){
+    var files = Array.prototype.slice.call(ev.target.files || []);
+    ev.target.value = "";
+    if (!files.length) return;
+
+    var velha = files.filter(function(f){
+      return f.lastModified && (Date.now() - f.lastModified) > STALE_MS;
+    }).length;
+    $("camWarn").innerHTML = velha
+      ? '<div class="warnbox"><b>Aten\u00e7\u00e3o:</b> ' + velha + ' foto(s) n\u00e3o s\u00e3o de agora \u2014 vieram da galeria. O carimbo marca a hora de AGORA, n\u00e3o a da foto.</div>'
+      : "";
+
+    var pend = files.length;
+    files.forEach(function(f){
+      stampPhoto(f, function(shot){
+        if (shot) S.shots.push(shot);
+        if (--pend === 0){ renderShots(); toast(S.shots.length + " foto(s) carimbada(s)"); }
+      });
+    });
+  });
+
+  function avisoSalvarNaMao(){
+    if (S.shots.length){
+      $("picHelp").innerHTML =
+        "<b>Segure o dedo na foto</b> abaixo e escolha <b>Adicionar às Fotos</b>. " +
+        "Depois é só anexar no WhatsApp — o texto do report já está copiado.";
+      showPic(0);
+      openOvl("ovlPic");
+    }
+    $("camWarn").innerHTML =
+      '<div class="warnbox"><b>Este iPhone n\u00e3o deixa a p\u00e1gina mandar a foto direto.</b><br>' +
+      'Fa\u00e7a assim: <b>toque na foto</b> aqui em cima \u2192 <b>segure o dedo</b> na imagem grande \u2192 ' +
+      '<b>Salvar em Fotos</b>. Depois anexe no WhatsApp normalmente.<br>' +
+      'O texto do report <b>j\u00e1 est\u00e1 copiado</b> \u2014 \u00e9 s\u00f3 colar na legenda.</div>';
+    window.scrollTo({ top: $("camWarn").offsetTop - 120, behavior:"smooth" });
+  }
+
+  $("sendShots").addEventListener("click", function(){
+    var text = build();
+
+    // WhatsApp costuma descartar o texto quando vem foto junto: copia sempre antes
+    if (navigator.clipboard && navigator.clipboard.writeText){
+      navigator.clipboard.writeText(text).catch(function(){});
+    }
+
+    if (!canShareFiles()){
+      avisoSalvarNaMao();
+      toast("Texto copiado \u2014 salve as fotos na m\u00e3o");
+      return;
+    }
+
+    var files = S.shots.map(function(sh){
+      return new File([sh.blob], sh.name, {type:"image/jpeg"});
+    });
+
+    navigator.share({ files: files, text: text })
+      .then(function(){
+        logSent();
+        $("camWarn").innerHTML = "";
+        toast("Enviado \u2014 se o texto n\u00e3o foi junto, cole (j\u00e1 copiado)");
+      })
+      .catch(function(err){
+        if (err && err.name === "AbortError") return;
+        avisoSalvarNaMao();
+      });
+  });
+
+  var picIdx = 0;
+  function showPic(i){
+    if (!S.shots.length) return;
+    picIdx = Math.max(0, Math.min(i, S.shots.length - 1));
+    $("picBig").src = S.shots[picIdx].url;
+    $("picCount").textContent = S.shots.length > 1
+      ? "Foto " + (picIdx + 1) + " de " + S.shots.length + " — salve uma por vez"
+      : "";
+    $("picPrev").hidden = S.shots.length < 2;
+    $("picNext").hidden = S.shots.length < 2;
+  }
+  $("picPrev").addEventListener("click", function(){ showPic(picIdx - 1); });
+  $("picNext").addEventListener("click", function(){ showPic(picIdx + 1); });
+  $("picClose").addEventListener("click", function(){ closeOvl("ovlPic"); });
+
+  /* -------- overlays proprios: <dialog> e prompt() sao bloqueados
+     dentro da moldura do artifact no iOS -------- */
+  function openOvl(id){
+    $(id).hidden = false;
+    document.body.style.overflow = "hidden";
+  }
+  function closeOvl(id){
+    $(id).hidden = true;
+    document.body.style.overflow = "";
+  }
+
+  var askCb = null;
+  function ask(title, help, placeholder, okLabel, cb){
+    $("askTitle").textContent = title;
+    $("askHelp").textContent = help;
+    $("askInput").value = "";
+    $("askInput").placeholder = placeholder;
+    $("askOk").textContent = okLabel;
+    askCb = cb;
+    openOvl("ovlAsk");
+    setTimeout(function(){ $("askInput").focus(); }, 60);
+  }
+  $("askCancel").addEventListener("click", function(){ askCb = null; closeOvl("ovlAsk"); });
+  $("askOk").addEventListener("click", function(){
+    var v = $("askInput").value.trim();
+    var cb = askCb; askCb = null;
+    closeOvl("ovlAsk");
+    if (v && cb) cb(v);
+  });
+  $("askInput").addEventListener("keydown", function(e){
+    if (e.key === "Enter"){ e.preventDefault(); $("askOk").click(); }
+  });
+
+  $("pasteRoute").addEventListener("click", function(){
+    $("routeText").value = "";
+    $("routeHint").innerHTML = 'Depois de colar, toque em <b>Limpar lista</b> e confira antes de montar.';
+    openOvl("ovlRoute");
+  });
+  $("routeCancel").addEventListener("click", function(){ closeOvl("ovlRoute"); });
+
+  $("cleanRoute").addEventListener("click", function(){
+    var raw = $("routeText").value;
+    var brutas = raw.split(/\r?\n/).filter(function(l){ return l.trim(); }).length;
+    var limpas = parseRoute(raw);
+    if (!limpas.length){
+      $("routeHint").textContent = "Nao achei endereco nenhum nesse texto. Confira o print.";
+      return;
+    }
+    $("routeText").value = limpas.join("\n");
+    $("routeHint").innerHTML = "<b>" + limpas.length + " endere\u00e7os</b> de " + brutas +
+      " linhas. Corrija o que o OCR errou aqui mesmo, depois toque em Montar rota.";
+  });
+
+  $("doRoute").addEventListener("click", function(){
+    var labels = parseRoute($("routeText").value);
+    if (!labels.length){ toast("Nao achei endereco nenhum ai"); return; }
+    var novos = 0;
+    S.route = labels.map(function(l){
+      var before = S.addresses.length;
+      var a = addAddress(l);
+      if (!a) return null;
+      if (S.addresses.length > before) novos++;
+      return a.id;
+    }).filter(Boolean);
+    S.done = [];
+    S.showAll = false;
+    S.q = ""; $("addrSearch").value = "";
+    S.current = S.route[0];
+    closeOvl("ovlRoute");
+    unlock(); save(); renderAddrs(); renderLedger(); build();
+    toast(S.route.length + " casas na rota" + (novos ? " \u00b7 " + novos + " novas salvas" : ""));
+  });
+
+  $("nextStop").addEventListener("click", function(){
+    if (!S.route.length) return;
+    if (S.current && S.done.indexOf(S.current) < 0) S.done.push(S.current);
+    var i = S.route.indexOf(S.current);
+    var next = S.route.filter(function(id, j){
+      return j > i && S.done.indexOf(id) < 0;
+    })[0] || S.route.filter(function(id){ return S.done.indexOf(id) < 0; })[0];
+    if (!next){
+      S.current = null; save(); renderAddrs(); build();
+      toast("Rota concluida. Bom trabalho.");
+      return;
+    }
+    S.current = next;
+    S.counts = {}; S.custom = []; $("note").value = "";
+    clearShots(); unlock(); save(); renderAddrs(); renderIssues(); renderLedger(); build();
+    window.scrollTo({top:0, behavior:"smooth"});
+    toast("Proxima: " + currentAddr().label);
+  });
+
+  $("addrSearch").addEventListener("input", function(){
+    S.q = this.value.trim();
+    renderAddrs();
+  });
+
+  $("addAddr").addEventListener("click", function(){
+    ask("Nova casa",
+        "Digite como voc\u00ea quer ver na lista e na mensagem.",
+        "123 Sunny Ct, Kissimmee FL",
+        "Adicionar",
+        function(v){
+          var a = addAddress(v);
+          if (!a) return;
+          S.current = a.id;
+          if (S.route.length && S.route.indexOf(a.id) < 0) S.route.push(a.id);
+          S.q = ""; $("addrSearch").value = "";
+          unlock(); save(); renderAddrs(); renderLedger(); build();
+          toast("Salvo: " + a.label);
+        });
+  });
+
+  $("editAddr").addEventListener("click", function(){
+    var on = document.body.classList.toggle("editing");
+    $("editAddr").textContent = on ? "Pronto" : "Apagar casas";
+    toast(on ? "Toque no \u00d7 vermelho pra apagar" : "Pronto");
+  });
+
+  $("addCustom").addEventListener("click", function(){
+    ask("Outro problema",
+        "O texto vai na mensagem exatamente como voc\u00ea escrever.",
+        "Ex.: port\u00e3o da piscina n\u00e3o tranca",
+        "Adicionar",
+        function(v){
+          S.custom.push({text:v, n:1, sev:"crit"});
+          unlock(); renderIssues(); build();
+          toast("Adicionado");
+        });
+  });
+
+  $("copyBtn").addEventListener("click", function(){
+    var text = build();
+    var done = function(){ toast("Copiado \u2014 cole no WhatsApp"); logSent(); };
+    var fallback = function(){
+      var ta = $("msg");
+      ta.focus(); ta.setSelectionRange(0, ta.value.length);
+      var ok = false;
+      try { ok = document.execCommand("copy"); } catch(e){}
+      if (ok) done();
+      else toast("Segure no texto acima e escolha Copiar");
+    };
+    if (navigator.clipboard && navigator.clipboard.writeText){
+      navigator.clipboard.writeText(text).then(done, fallback);
+    } else fallback();
+  });
+
+  $("waBtn").addEventListener("click", function(){ logSent(); });
+
+  $("clearBtn").addEventListener("click", function(){
+    S.counts = {}; S.custom = []; $("note").value = "";
+    clearShots(); unlock(); renderIssues(); build();
+    window.scrollTo({top:0, behavior:"smooth"});
+    toast("Report limpo — pronto pra próxima casa");
+  });
+
+  /* ---------- settings ---------- */
+  $("openSettings").addEventListener("click", function(){
+    $("fName").value = S.name;
+    $("fPhone").value = S.phone;
+    $("fAddrs").value = S.addresses.map(function(a){ return a.label; }).join("\n");
+    $("backupOut").hidden = true;
+    openOvl("ovlSet");
+  });
+
+  $("setClose").addEventListener("click", function(){ closeOvl("ovlSet"); });
+
+  $("setSave").addEventListener("click", function(){
+    S.name = $("fName").value.trim();
+    S.phone = $("fPhone").value.trim();
+
+    var lines = $("fAddrs").value.split("\n").map(function(x){ return x.trim(); }).filter(Boolean);
+    var kept = [];
+    lines.forEach(function(l, idx){
+      var old = S.addresses.filter(function(a){
+        return a.label.toLowerCase() === l.toLowerCase();
+      })[0];
+      kept.push(old || {id:"a" + Date.now() + idx, label:l, lat:null, lng:null});
+    });
+    S.addresses = kept;
+
+    var live = S.addresses.map(function(a){ return a.id; });
+    S.route = S.route.filter(function(id){ return live.indexOf(id) > -1; });
+    S.done  = S.done.filter(function(id){ return live.indexOf(id) > -1; });
+    if (live.indexOf(S.current) < 0) S.current = null;
+
+    closeOvl("ovlSet");
+    save(); renderAddrs(); renderLedger(); build();
+    toast("Salvo");
+  });
+
+  $("backupBtn").addEventListener("click", function(){
+    var payload = btoa(unescape(encodeURIComponent(JSON.stringify({
+      name:$("fName").value.trim(),
+      phone:$("fPhone").value.trim(),
+      lang:S.lang,
+      addresses:$("fAddrs").value.split("\n").map(function(x){ return x.trim(); })
+        .filter(Boolean).map(function(l, i){ return {id:"a" + i, label:l, lat:null, lng:null}; })
+    }))));
+    var url = location.origin + location.pathname + "#" + payload;
+    var out = $("backupOut");
+    out.value = url;
+    out.hidden = false;
+    if (navigator.clipboard && navigator.clipboard.writeText){
+      navigator.clipboard.writeText(url).then(
+        function(){ toast("Link copiado — salve nos favoritos"); },
+        function(){ toast("Segure no link acima e copie"); }
+      );
+    } else {
+      toast("Segure no link acima e copie");
+    }
+  });
+
+  /* ---------- boot ---------- */
+  load();
+  Array.prototype.forEach.call(document.querySelectorAll(".langs button"), function(x){
+    x.setAttribute("aria-pressed", String(x.dataset.lang === S.lang));
+  });
+  renderAddrs();
+  renderIssues();
+  renderShots();
+  if (!canShareFiles()){
+    $("camBtn").textContent = "📷 Tirar foto com carimbo";
+  }
+  renderLedger();
+  renderHist();
+  tickClock();
+  build();
+  setInterval(function(){ tickClock(); if (!logged) build(); }, 30000);
+})();
+</script>
+
+<script>
+if ("serviceWorker" in navigator){
+  window.addEventListener("load", function(){
+    navigator.serviceWorker.register("sw.js").catch(function(){});
+  });
+}
+</script>
+</body>
+</html>
