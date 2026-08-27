@@ -638,6 +638,27 @@ textarea:focus,input:focus,button:focus-visible,a:focus-visible{
       semear();
     }
 
+    /* Lista de casas por endereco curto: ?casas=<id>
+       Busca a lista, SOMA ao que ja existe e limpa a barra. */
+    var gid = (location.search.match(/[?&]casas=([0-9a-zA-Z]+)/) || [])[1];
+    if (gid && window.fetch){
+      fetch("https://gist.githubusercontent.com/dayvson30-alt/" + gid + "/raw/casas.json",
+            { cache: "no-cache" })
+        .then(function(r){ return r.ok ? r.json() : null; })
+        .then(function(d){
+          if (!d || !Array.isArray(d.addresses)) throw new Error("vazio");
+          var antes = S.addresses.length;
+          d.addresses.forEach(function(a){ if (a && a.label) addAddress(a.label); });
+          save(); renderAddrs(); renderLedger(); build();
+          var novas = S.addresses.length - antes;
+          toast(novas ? novas + " casas carregadas" : "Lista ja estava em dia");
+        })
+        .catch(function(){ toast("Nao consegui baixar a lista. Tente com internet."); })
+        .then(function(){
+          try { history.replaceState(null, "", location.pathname); } catch(e){}
+        });
+    }
+
     /* Link de backup: SOMA as casas, nunca apaga o que ja existe aqui.
        Depois limpa o hash pra nao reimportar a cada abertura. */
     var h = location.hash.slice(1);
