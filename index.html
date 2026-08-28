@@ -577,6 +577,12 @@ textarea:focus,input:focus,button:focus-visible,a:focus-visible{
     </div>
 
     <div class="field">
+      <label for="reloadBtn">Minhas casas</label>
+      <button type="button" class="mini wide" id="reloadBtn">&#8635; Recarregar lista de casas</button>
+      <small>Use se a lista sumir. Busca de novo e soma o que faltar &mdash; nunca duplica.</small>
+    </div>
+
+    <div class="field">
       <label for="backupBtn">Backup</label>
       <button type="button" class="mini wide" id="backupBtn">Ver link com meus endere&ccedil;os</button>
       <small>Salve o link nos favoritos. Se o celular limpar os dados, o link traz tudo de volta.</small>
@@ -661,7 +667,9 @@ textarea:focus,input:focus,button:focus-visible,a:focus-visible{
     /* Lista de casas por endereco curto: ?casas=<id>
        Busca a lista, SOMA ao que ja existe e limpa a barra. */
     var gid = (location.search.match(/[?&]casas=([0-9a-zA-Z]+)/) || [])[1];
+    if (!gid){ try { gid = localStorage.getItem(KEY + ".lista") || ""; } catch(e){} }
     if (gid && window.fetch){
+      try { localStorage.setItem(KEY + ".lista", gid); } catch(e){}
       fetch("https://gist.githubusercontent.com/dayvson30-alt/" + gid + "/raw/casas.json",
             { cache: "no-cache" })
         .then(function(r){ return r.ok ? r.json() : null; })
@@ -673,10 +681,10 @@ textarea:focus,input:focus,button:focus-visible,a:focus-visible{
           var novas = S.addresses.length - antes;
           toast(novas ? novas + " casas carregadas" : "Lista ja estava em dia");
         })
-        .catch(function(){ toast("Nao consegui baixar a lista. Tente com internet."); })
-        .then(function(){
-          try { history.replaceState(null, "", location.pathname); } catch(e){}
+        .catch(function(){
+          if (!S.addresses.length) toast("Sem internet: nao consegui buscar as casas.");
         });
+      // o endereco fica na barra de proposito: e ele que traz as casas de volta
     }
 
     /* Link de backup: SOMA as casas, nunca apaga o que ja existe aqui.
@@ -816,6 +824,29 @@ textarea:focus,input:focus,button:focus-visible,a:focus-visible{
     return d;
   }
 
+  function recarregarCasas(){
+    var gid = "";
+    try { gid = localStorage.getItem(KEY + ".lista") || ""; } catch(e){}
+    if (!gid) gid = (location.search.match(/[?&]casas=([0-9a-zA-Z]+)/) || [])[1] || "";
+    if (!gid){
+      toast("Nao sei qual e a sua lista. Abra o link que eu te mandei.");
+      return;
+    }
+    toast("Buscando...");
+    fetch("https://gist.githubusercontent.com/dayvson30-alt/" + gid + "/raw/casas.json",
+          { cache: "no-cache" })
+      .then(function(r){ return r.ok ? r.json() : null; })
+      .then(function(d){
+        if (!d || !Array.isArray(d.addresses)) throw new Error("vazio");
+        var antes = S.addresses.length;
+        d.addresses.forEach(function(a){ if (a && a.label) addAddress(a.label); });
+        save(); renderAddrs(); renderLedger(); build();
+        var novas = S.addresses.length - antes;
+        toast(novas ? novas + " casas carregadas" : "Sua lista ja estava em dia");
+      })
+      .catch(function(){ toast("Nao consegui baixar. Precisa de internet."); });
+  }
+
   function renderAddrs(){
     var box = $("addrList");
     box.innerHTML = "";
@@ -843,8 +874,13 @@ textarea:focus,input:focus,button:focus-visible,a:focus-visible{
     if (!S.addresses.length){
       var e = document.createElement("div");
       e.className = "empty";
-      e.textContent = "Nenhuma casa ainda. Cole a rota do Skimmer aqui em cima \u2014 depois da primeira vez, \u00e9 s\u00f3 tocar.";
+      e.textContent = "Nenhuma casa aqui. Se voce ja tem a sua lista, e so recarregar.";
       box.appendChild(e);
+      var b = document.createElement("button");
+      b.type = "button"; b.className = "mini wide";
+      b.textContent = "↻ Recarregar minhas casas";
+      b.addEventListener("click", recarregarCasas);
+      box.appendChild(b);
       return;
     }
 
@@ -1707,6 +1743,11 @@ textarea:focus,input:focus,button:focus-visible,a:focus-visible{
 
   $("setClose").addEventListener("click", function(){ closeOvl("ovlSet"); });
 
+  $("reloadBtn").addEventListener("click", function(){
+    closeOvl("ovlSet");
+    recarregarCasas();
+  });
+
   $("setSave").addEventListener("click", function(){
     S.name = $("fName").value.trim();
     S.phone = $("fPhone").value.trim();
@@ -1754,6 +1795,7 @@ textarea:focus,input:focus,button:focus-visible,a:focus-visible{
   });
 
   /* ---------- boot ---------- */
+  if (navigator.storage && navigator.storage.persist) navigator.storage.persist();
   load();
   Array.prototype.forEach.call(document.querySelectorAll(".langs button"), function(x){
     x.setAttribute("aria-pressed", String(x.dataset.lang === S.lang));
