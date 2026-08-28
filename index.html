@@ -485,8 +485,11 @@ textarea:focus,input:focus,button:focus-visible,a:focus-visible{
       </div>
       <textarea id="msg" spellcheck="false" aria-label="Texto do report"></textarea>
     </div>
+    <div class="mini-row" id="rowNext" hidden>
+      <button type="button" class="btn btn-primary wide" id="nextHouse">&#10003; Enviado &middot; pr&oacute;xima casa</button>
+    </div>
     <div class="mini-row">
-      <button class="mini" id="clearBtn">Limpar report</button>
+      <button type="button" class="mini" id="clearBtn">Limpar report</button>
     </div>
   </section>
 
@@ -520,6 +523,17 @@ textarea:focus,input:focus,button:focus-visible,a:focus-visible{
     </div>
     <div class="mini-row">
       <button type="button" class="mini wide" id="routeCancel">Cancelar</button>
+    </div>
+  </div>
+</div>
+
+<div class="ovl" id="ovlConfirm" hidden>
+  <div class="sheet">
+    <h2 id="cfTitle">.</h2>
+    <p id="cfHelp">.</p>
+    <div class="bar-inner">
+      <button type="button" class="btn btn-ghost" id="cfNo">Manter</button>
+      <button type="button" class="btn btn-primary" id="cfYes">Limpar</button>
     </div>
   </div>
 </div>
@@ -628,7 +642,11 @@ textarea:focus,input:focus,button:focus-visible,a:focus-visible{
 
   /* trava pra não contar duas vezes o mesmo report (Copiar + WhatsApp) */
   var logged = false;
-  function unlock(){ logged = false; }
+  function unlock(){
+    logged = false;
+    var r = document.getElementById("rowNext");
+    if (r) r.hidden = true;
+  }
 
   var $ = function(id){ return document.getElementById(id); };
 
@@ -761,14 +779,7 @@ textarea:focus,input:focus,button:focus-visible,a:focus-visible{
     var label = document.createElement("span");
     label.textContent = a.label;
     b.appendChild(label);
-    b.addEventListener("click", function(){
-      S.current = a.id;
-      S.picking = false;                      // trava: some a lista, fica so esta casa
-      S.q = ""; $("addrSearch").value = "";
-      document.body.classList.remove("editing");
-      $("editAddr").textContent = "Apagar casas";
-      unlock(); renderAddrs(); renderLedger(); build();
-    });
+    b.addEventListener("click", function(){ trocarPara(a.id); });
     row.appendChild(b);
 
     var kill = document.createElement("button");
@@ -845,6 +856,52 @@ textarea:focus,input:focus,button:focus-visible,a:focus-visible{
         toast(novas ? novas + " casas carregadas" : "Sua lista ja estava em dia");
       })
       .catch(function(){ toast("Nao consegui baixar. Precisa de internet."); });
+  }
+
+  function temConteudo(){
+    return Object.keys(S.counts).length > 0 || S.custom.length > 0 ||
+           S.shots.length > 0 || $("note").value.trim() !== "";
+  }
+
+  function limparReport(){
+    S.counts = {}; S.custom = []; $("note").value = "";
+    clearShots(); unlock(); renderIssues(); build();
+  }
+
+  /* botao "proxima casa" so aparece depois que o report foi enviado */
+  function renderSendState(){
+    $("rowNext").hidden = !logged;
+  }
+
+  var cfCb = null;
+  function confirmar(titulo, ajuda, rotuloSim, cb){
+    $("cfTitle").textContent = titulo;
+    $("cfHelp").textContent = ajuda;
+    $("cfYes").textContent = rotuloSim;
+    cfCb = cb;
+    openOvl("ovlConfirm");
+  }
+
+  /* troca de casa: se o report atual ainda nao foi enviado, pergunta antes */
+  function trocarPara(id){
+    var mudou = id !== S.current;
+    var fecha = function(){
+      S.current = id;
+      S.picking = false;
+      S.q = ""; $("addrSearch").value = "";
+      document.body.classList.remove("editing");
+      $("editAddr").textContent = "Apagar casas";
+      unlock(); renderAddrs(); renderLedger(); build();
+    };
+    if (mudou && temConteudo() && !logged){
+      confirmar("Comecar report novo?",
+                "Voce marcou coisas nesta casa e ainda nao enviou. Limpar tudo para a proxima casa?",
+                "Limpar",
+                function(sim){ if (sim) limparReport(); fecha(); });
+      return;
+    }
+    if (mudou) limparReport();
+    fecha();
   }
 
   function renderAddrs(){
@@ -1358,7 +1415,7 @@ textarea:focus,input:focus,button:focus-visible,a:focus-visible{
       n: hits.length
     });
     S.history = S.history.slice(0, 12);
-    save(); renderHist(); renderLedger();
+    save(); renderHist(); renderLedger(); renderSendState();
   }
 
   /* ---------------------------------------------------------------
@@ -1750,6 +1807,21 @@ textarea:focus,input:focus,button:focus-visible,a:focus-visible{
   });
 
   $("waBtn").addEventListener("click", function(){ logSent(); });
+
+  $("cfNo").addEventListener("click", function(){
+    var cb = cfCb; cfCb = null; closeOvl("ovlConfirm"); if (cb) cb(false);
+  });
+  $("cfYes").addEventListener("click", function(){
+    var cb = cfCb; cfCb = null; closeOvl("ovlConfirm"); if (cb) cb(true);
+  });
+
+  $("nextHouse").addEventListener("click", function(){
+    limparReport();
+    S.picking = true;
+    renderAddrs();
+    window.scrollTo({ top:0, behavior:"smooth" });
+    toast("Escolha a proxima casa");
+  });
 
   $("clearBtn").addEventListener("click", function(){
     S.counts = {}; S.custom = []; $("note").value = "";
