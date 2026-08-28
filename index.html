@@ -874,13 +874,39 @@ textarea:focus,input:focus,button:focus-visible,a:focus-visible{
     if (!S.addresses.length){
       var e = document.createElement("div");
       e.className = "empty";
-      e.textContent = "Nenhuma casa aqui. Se voce ja tem a sua lista, e so recarregar.";
-      box.appendChild(e);
-      var b = document.createElement("button");
-      b.type = "button"; b.className = "mini wide";
-      b.textContent = "↻ Recarregar minhas casas";
-      b.addEventListener("click", recarregarCasas);
-      box.appendChild(b);
+      var sei = "";
+      try { sei = localStorage.getItem(KEY + ".lista") || ""; } catch(err){}
+      if (!sei) sei = (location.search.match(/[?&]casas=([0-9a-zA-Z]+)/) || [])[1] || "";
+
+      if (sei){
+        e.textContent = "A lista sumiu deste aparelho. Toque abaixo para busca-la de volta.";
+        box.appendChild(e);
+        var b = document.createElement("button");
+        b.type = "button"; b.className = "mini wide";
+        b.textContent = "↻ Recarregar minhas casas";
+        b.addEventListener("click", recarregarCasas);
+        box.appendChild(b);
+      } else {
+        e.innerHTML = "Este aparelho ainda nao conhece a sua lista de casas.<br><br>" +
+          "Abra <b>o link que o MAXIMUS te mandou</b> (o que termina em " +
+          "<code>?casas=...</code>) e adicione <b>esse</b> endereco a tela de inicio, " +
+          "para a lista voltar sozinha se sumir de novo.";
+        box.appendChild(e);
+        var b2 = document.createElement("button");
+        b2.type = "button"; b2.className = "mini wide";
+        b2.textContent = "Digitar o codigo da lista";
+        b2.addEventListener("click", function(){
+          ask("Codigo da lista",
+              "E a parte depois de casas= no link.",
+              "b6320233...",
+              "Carregar",
+              function(v){
+                try { localStorage.setItem(KEY + ".lista", v.trim()); } catch(err){}
+                recarregarCasas();
+              });
+        });
+        box.appendChild(b2);
+      }
       return;
     }
 
