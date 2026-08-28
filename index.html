@@ -161,6 +161,25 @@ section{margin-top:26px}
   -webkit-appearance:none;appearance:none;
 }
 .search::-webkit-search-cancel-button{-webkit-appearance:none;appearance:none}
+.locked{
+  width:100%;display:flex;align-items:center;gap:12px;
+  padding:16px;border-radius:var(--r-m);
+  border:1px solid var(--accent);background:var(--accent-soft);
+  box-shadow:inset 4px 0 0 var(--accent);
+}
+.locked .ord{width:30px;height:30px;font-size:13px;background:var(--accent);color:var(--accent-ink)}
+.locked b{
+  flex:1;font-weight:600;font-size:17px;line-height:1.25;
+  color:var(--ink);text-wrap:balance;
+}
+.locked .swap{
+  flex:none;align-self:stretch;min-height:44px;padding:0 14px;
+  border:1px solid var(--accent);border-radius:var(--r-s);
+  background:transparent;color:var(--accent);
+  font-family:"Barlow Semi Condensed",sans-serif;font-weight:700;font-size:12px;
+  letter-spacing:.08em;text-transform:uppercase;cursor:pointer;
+}
+.locked .swap:active{background:var(--surface)}
 .addr-line{display:flex;width:100%;gap:8px;align-items:stretch}
 .addr{
   flex:1;min-height:var(--tap);
@@ -183,6 +202,7 @@ section{margin-top:26px}
 }
 body.editing .kill{display:block}
 .mini-row{display:flex;gap:8px;margin-top:8px;flex-wrap:wrap}
+.mini-row[hidden],.shots[hidden]{display:none}
 .mini{
   flex:1 1 0;min-width:120px;min-height:44px;
   border:1px dashed var(--line-strong);border-radius:var(--r-m);
@@ -412,15 +432,15 @@ textarea:focus,input:focus,button:focus-visible,a:focus-visible{
   </header>
 
   <section>
-    <div class="lbl"><span class="step">1</span><b>Endereço</b><i>toque para escolher</i></div>
+    <div class="lbl"><span class="step">1</span><b>Endereço</b><i id="addrHint">toque para escolher</i></div>
     <input type="search" class="search" id="addrSearch" hidden
            placeholder="Buscar casa — ex.: 2924 ou penelope"
            autocomplete="off" autocorrect="off" autocapitalize="off">
     <div class="addr-row" id="addrList"></div>
-    <div class="mini-row">
+    <div class="mini-row" id="rowRoute">
       <button type="button" class="mini wide" id="pasteRoute">📋 Colar rota do Skimmer</button>
     </div>
-    <div class="mini-row">
+    <div class="mini-row" id="rowEdit">
       <button type="button" class="mini" id="nextStop" hidden>Próxima casa ▸</button>
       <button type="button" class="mini" id="addAddr">+ Novo</button>
       <button type="button" class="mini" id="editAddr">Apagar casas</button>
@@ -595,7 +615,7 @@ textarea:focus,input:focus,button:focus-visible,a:focus-visible{
   var S = {
     lang:"en", name:"", phone:"",
     addresses:[], current:null,
-    route:[], done:[], showAll:false, q:"",
+    route:[], done:[], showAll:false, q:"", picking:false,
     counts:{}, custom:[], note:"", shots:[],
     ledger:{}, history:[]
   };
@@ -734,7 +754,11 @@ textarea:focus,input:focus,button:focus-visible,a:focus-visible{
     label.textContent = a.label;
     b.appendChild(label);
     b.addEventListener("click", function(){
-      S.current = (S.current === a.id) ? null : a.id;
+      S.current = a.id;
+      S.picking = false;                      // trava: some a lista, fica so esta casa
+      S.q = ""; $("addrSearch").value = "";
+      document.body.classList.remove("editing");
+      $("editAddr").textContent = "Apagar casas";
       unlock(); renderAddrs(); renderLedger(); build();
     });
     row.appendChild(b);
@@ -747,7 +771,7 @@ textarea:focus,input:focus,button:focus-visible,a:focus-visible{
     kill.addEventListener("click", function(){
       S.addresses = S.addresses.filter(function(x){ return x.id !== a.id; });
       S.route = S.route.filter(function(x){ return x !== a.id; });
-      if (S.current === a.id) S.current = null;
+      if (S.current === a.id){ S.current = null; S.picking = false; }
       save(); renderAddrs(); renderLedger(); build();
       toast("Apagado: " + a.label);
     });
@@ -762,13 +786,58 @@ textarea:focus,input:focus,button:focus-visible,a:focus-visible{
                  : (t || "").toLowerCase();
   }
 
+  function cardTravado(a){
+    var d = document.createElement("div");
+    d.className = "locked";
+
+    var pos = S.route.indexOf(a.id);
+    if (pos > -1){
+      var o = document.createElement("span");
+      o.className = "ord";
+      o.textContent = pos + 1;
+      d.appendChild(o);
+    }
+
+    var b = document.createElement("b");
+    b.textContent = a.label;
+    d.appendChild(b);
+
+    var sw = document.createElement("button");
+    sw.type = "button";
+    sw.className = "swap";
+    sw.textContent = "Trocar";
+    sw.setAttribute("aria-label", "Trocar de casa");
+    sw.addEventListener("click", function(){
+      S.picking = true;
+      renderAddrs();
+      $("addrList").scrollIntoView({ behavior:"smooth", block:"start" });
+    });
+    d.appendChild(sw);
+    return d;
+  }
+
   function renderAddrs(){
     var box = $("addrList");
     box.innerHTML = "";
     $("nextStop").hidden = !S.route.length;
 
+    /* Casa escolhida = lista some. Evita trocar de casa sem querer
+       ao rolar a tela com a mao molhada. */
+    var atual = currentAddr();
+    var travado = !!atual && !S.picking;
+    $("addrSearch").hidden = travado || S.addresses.length < 8;
+    $("rowRoute").hidden = travado;
+    $("addAddr").hidden = travado;
+    $("editAddr").hidden = travado;
+    $("addrHint").textContent = travado
+      ? "trabalhando nesta casa"
+      : (S.addresses.length ? "toque para escolher" : "");
+    if (travado){
+      box.appendChild(cardTravado(atual));
+      return;
+    }
+
     var busca = $("addrSearch");
-    busca.hidden = S.addresses.length < 8;
     if (busca.hidden && S.q){ S.q = ""; busca.value = ""; }
 
     if (!S.addresses.length){
@@ -795,6 +864,7 @@ textarea:focus,input:focus,button:focus-visible,a:focus-visible{
           var a = addAddress(S.q);
           if (!a) return;
           S.current = a.id;
+          S.picking = false;
           if (S.route.length && S.route.indexOf(a.id) < 0) S.route.push(a.id);
           S.q = ""; $("addrSearch").value = "";
           unlock(); save(); renderAddrs(); renderLedger(); build();
@@ -1533,6 +1603,7 @@ textarea:focus,input:focus,button:focus-visible,a:focus-visible{
     }).filter(Boolean);
     S.done = [];
     S.showAll = false;
+    S.picking = false;
     S.q = ""; $("addrSearch").value = "";
     S.current = S.route[0];
     closeOvl("ovlRoute");
@@ -1553,6 +1624,7 @@ textarea:focus,input:focus,button:focus-visible,a:focus-visible{
       return;
     }
     S.current = next;
+    S.picking = false;
     S.counts = {}; S.custom = []; $("note").value = "";
     clearShots(); unlock(); save(); renderAddrs(); renderIssues(); renderLedger(); build();
     window.scrollTo({top:0, behavior:"smooth"});
@@ -1573,6 +1645,7 @@ textarea:focus,input:focus,button:focus-visible,a:focus-visible{
           var a = addAddress(v);
           if (!a) return;
           S.current = a.id;
+          S.picking = false;
           if (S.route.length && S.route.indexOf(a.id) < 0) S.route.push(a.id);
           S.q = ""; $("addrSearch").value = "";
           unlock(); save(); renderAddrs(); renderLedger(); build();
