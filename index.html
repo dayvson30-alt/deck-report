@@ -435,7 +435,7 @@ textarea:focus,input:focus,button:focus-visible,a:focus-visible{
 .chip{display:flex;align-items:baseline;gap:7px;background:var(--surface);
   border:1px solid var(--line-strong);border-radius:var(--r-s);
   padding:8px 11px;min-height:40px}
-.chip b{font:500 11px/1 Barlow,sans-serif;letter-spacing:.05em;
+.chip b{font:500 11px/1.5 Barlow,sans-serif;letter-spacing:.05em;
   text-transform:uppercase;color:var(--ink-3)}
 .chip span{font:500 17px/1 "IBM Plex Mono",monospace;color:var(--ink);
   letter-spacing:.06em}
@@ -460,16 +460,20 @@ textarea:focus,input:focus,button:focus-visible,a:focus-visible{
 .lockrow{display:flex;align-items:center;gap:10px;padding:9px 13px;
   border-top:1px solid var(--line)}
 .lockrow:first-of-type{border-top:0}
-.lockrow .l-tap{flex:1;display:flex;align-items:baseline;gap:10px;
-  background:none;border:0;padding:4px 0;text-align:left;min-width:0}
-.lockrow .l-lbl{font:500 12px/1.3 Barlow,sans-serif;color:var(--ink-2);
-  min-width:74px;flex:0 0 auto}
-.lockrow .l-val{font:500 22px/1.1 "IBM Plex Mono",monospace;color:var(--ink);
-  letter-spacing:.07em;word-break:break-all}
-.lockrow .l-since{font:400 11px/1 Barlow,sans-serif;color:var(--ink-3);
-  flex:0 0 auto;white-space:nowrap}
-.lockrow .l-btn{background:none;border:0;color:var(--ink-3);font-size:15px;
-  padding:8px 5px;flex:0 0 auto}
+.lockrow .l-tap{flex:1 1 auto;display:flex;flex-direction:column;
+  align-items:flex-start;gap:2px;background:none;border:0;padding:4px 0;
+  text-align:left;min-width:0;overflow:hidden}
+.lockrow .l-lbl{font:500 11px/1.3 Barlow,sans-serif;color:var(--ink-2);
+  letter-spacing:.03em;max-width:100%}
+/* quebra SO no espaco: "002320 ou 739724" vira duas linhas inteiras.
+   Cortar com "..." esconderia digito - codigo truncado e codigo errado. */
+.lockrow .l-val{font:500 23px/1.2 "IBM Plex Mono",monospace;color:var(--ink);
+  letter-spacing:.06em;max-width:100%;white-space:normal;
+  word-break:keep-all;overflow-wrap:normal}
+.lockrow .l-since{font:400 11px/1.2 Barlow,sans-serif;color:var(--ink-3);
+  white-space:nowrap}
+.lockrow .l-btn{background:none;border:0;color:var(--ink-3);font-size:14px;
+  padding:8px 4px;flex:0 0 auto;line-height:1}
 .lockrow:active{background:var(--accent-soft)}
 .prevbox{padding:2px 13px 10px;font:400 12px/1.6 Barlow,sans-serif;color:var(--ink-3)}
 .prevbox s{font-family:"IBM Plex Mono",monospace;color:var(--ink-2)}
@@ -488,7 +492,7 @@ textarea:focus,input:focus,button:focus-visible,a:focus-visible{
 .pickrow:active{background:var(--accent-soft);border-color:var(--accent)}
 .emptyc{padding:18px 4px;text-align:center;font:400 13px/1.6 Barlow,sans-serif;
   color:var(--ink-3)}
-.qrb{font:600 11px/1 Barlow,sans-serif;letter-spacing:.05em;padding:7px 9px;
+.qrb{font:600 11px/1.5 Barlow,sans-serif;letter-spacing:.05em;padding:7px 9px;
   border:1px solid var(--line-strong);border-radius:var(--r-s);
   background:var(--surface);color:var(--ink-3);flex:0 0 auto}
 .qrb.on{border-color:var(--accent);color:var(--accent);background:var(--accent-soft)}
@@ -2157,12 +2161,12 @@ textarea:focus,input:focus,button:focus-visible,a:focus-visible{
         if (!l.value) return askLock(c, l);
         cbCopy(l.value); toast(l.label + " copiado: " + l.value);
       });
-      r.appendChild(tap);
       var ex = expState(l);
       var sc = document.createElement("span");
       sc.className = "l-since" + (ex && ex.bad ? " bad" : "");
-      sc.textContent = ex ? ex.txt : (l.since ? shortD(l.since) : "");
-      r.appendChild(sc);
+      sc.textContent = ex ? ex.txt : (l.since ? "desde " + shortD(l.since) : "");
+      tap.appendChild(sc);
+      r.appendChild(tap);
 
       var cal = document.createElement("button");
       cal.type = "button"; cal.className = "l-btn"; cal.textContent = "\uD83D\uDCC5";
