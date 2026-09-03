@@ -499,6 +499,20 @@ textarea:focus,input:focus,button:focus-visible,a:focus-visible{
   max-width:min(84vw,400px);background:#fff;border:10px solid #fff;
   border-radius:4px;image-rendering:pixelated}
 .qr-tip{text-align:center;font:400 12px/1.5 Barlow,sans-serif;color:#555;margin:0 0 6px}
+.l-since.bad{color:var(--crit);font-weight:600}
+.chip.bad{border-color:var(--crit);background:var(--crit-soft)}
+.chip.bad span{color:var(--crit)}
+.expbox{border:1px solid var(--crit);background:var(--crit-soft);color:var(--crit);
+  border-radius:var(--r-m);padding:11px 13px;margin-top:10px;
+  font:500 13px/1.5 Barlow,sans-serif}
+.expbox b{display:block;font:600 12px/1.4 "Barlow Semi Condensed",sans-serif;
+  letter-spacing:.05em;text-transform:uppercase;margin-bottom:3px}
+.drop{border:2px dashed var(--line-strong);border-radius:var(--r-m);
+  padding:26px 14px;text-align:center;color:var(--ink-3);margin:12px 0;
+  font:500 13px/1.5 Barlow,sans-serif}
+.drop.over{border-color:var(--accent);background:var(--accent-soft);color:var(--accent)}
+.drop small{display:block;margin-top:5px;font-weight:400;font-size:12px}
+.qr-hint{font:400 12px/1.5 Barlow,sans-serif;color:var(--ink-2);margin:8px 0 0}
 </style>
 <div class="wrap">
   <header>
@@ -687,6 +701,24 @@ textarea:focus,input:focus,button:focus-visible,a:focus-visible{
     <div class="bar-inner">
       <button type="button" class="btn btn-ghost" id="pickCancel">Cancelar</button>
       <button type="button" class="btn btn-primary" id="pickNew">+ Novo</button>
+    </div>
+  </div>
+</div>
+
+<div class="ovl" id="ovlQRAdd" hidden>
+  <div class="sheet">
+    <h2 id="qrAddTitle">QR do condom&iacute;nio</h2>
+    <p>Print do passe, foto ou arquivo. Fica <b>neste celular</b> e abre sem internet.</p>
+    <div class="drop" id="qrDrop">Arraste a imagem aqui
+      <small>ou use os bot&otilde;es abaixo</small></div>
+    <div class="mini-row">
+      <button type="button" class="mini" id="qrFromFile">&#128247; Foto / arquivo</button>
+      <button type="button" class="mini" id="qrFromClip">&#128203; Colar imagem</button>
+    </div>
+    <p class="qr-hint" id="qrAddHint">No iPhone: tire um <b>print</b> do passe, depois
+      toque em Foto / arquivo &rarr; Fototeca.</p>
+    <div class="bar-inner">
+      <button type="button" class="btn btn-ghost wide" id="qrAddClose">Fechar</button>
     </div>
   </div>
 </div>
@@ -1785,7 +1817,7 @@ textarea:focus,input:focus,button:focus-visible,a:focus-visible{
     return m;
   }
   /* troca guarda o anterior com a data: cadeado que nao abre precisa do velho */
-  function setLock(comm, label, value){
+  function setLock(comm, label, value, until){
     if (!comm) return;
     var k = norm(label), cur = null;
     comm.locks.forEach(function(l){ if (norm(l.label) === k) cur = l; });
@@ -1798,6 +1830,7 @@ textarea:focus,input:focus,button:focus-visible,a:focus-visible{
     cur.prev = cur.prev.slice(0, 4);
     cur.value = value;
     cur.since = today();
+    if (until) cur.until = until;
   }
   function setMaster(value){
     var m = S.codes.master;
@@ -1805,6 +1838,47 @@ textarea:focus,input:focus,button:focus-visible,a:focus-visible{
     if (m.value) m.prev.unshift({value:m.value, until:today()});
     m.prev = m.prev.slice(0, 4);
     m.value = value; m.since = today();
+  }
+
+  /* ---------- VALIDADE ----------
+     Passe de portao NAO e codigo: vence. O passe real do Solara que ele
+     mandou em 02/09/2026 estava vencido desde 05/08/2026 - o app nao
+     podia deixar isso passar despercebido no portao. */
+  var MESES_EN = {jan:1,feb:2,mar:3,apr:4,may:5,jun:6,jul:7,aug:8,sep:9,oct:10,nov:11,dec:12};
+  function parseDate(t){
+    var s0 = String(t || "").trim();
+    var m = s0.match(/(\d{4})-(\d{2})-(\d{2})/);
+    if (m) return m[1] + "-" + m[2] + "-" + m[3];
+    /* "Wed Aug 05 2026" / "Aug 05, 2026" / "May 6 2026" */
+    m = s0.match(/([A-Za-z]{3})[a-z]*\.?\s+(\d{1,2})(?:st|nd|rd|th)?,?\s+(\d{4})/);
+    if (m && MESES_EN[m[1].toLowerCase()]){
+      return m[3] + "-" + pad2(MESES_EN[m[1].toLowerCase()]) + "-" + pad2(+m[2]);
+    }
+    /* "05 Aug 2026" */
+    m = s0.match(/(\d{1,2})\s+([A-Za-z]{3})[a-z]*\.?\s+(\d{4})/);
+    if (m && MESES_EN[m[2].toLowerCase()]){
+      return m[3] + "-" + pad2(MESES_EN[m[2].toLowerCase()]) + "-" + pad2(+m[1]);
+    }
+    /* mm/dd/yyyy (padrao EUA) */
+    m = s0.match(/(\d{1,2})\/(\d{1,2})\/(\d{4})/);
+    if (m) return m[3] + "-" + pad2(+m[1]) + "-" + pad2(+m[2]);
+    return "";
+  }
+  function pad2(n){ return (n < 10 ? "0" : "") + n; }
+  function daysLeft(iso){
+    if (!iso) return null;
+    var p = iso.split("-");
+    if (p.length < 3) return null;
+    var d = new Date(+p[0], +p[1] - 1, +p[2], 23, 59, 59);
+    var h = new Date();
+    return Math.floor((d - h) / 86400000);
+  }
+  function expState(l){
+    var n = daysLeft(l && l.until);
+    if (n === null) return null;
+    if (n < 0) return {bad:true, txt:"VENCIDO " + shortD(l.until)};
+    if (n <= 7) return {bad:true, txt:"vence " + shortD(l.until)};
+    return {bad:false, txt:"at\u00e9 " + shortD(l.until)};
   }
 
   /* ---------- QR de condominio ----------
@@ -1824,10 +1898,35 @@ textarea:focus,input:focus,button:focus-visible,a:focus-visible{
   var qrTarget = null;
   function qrPick(comm){
     qrTarget = comm;
+    $("qrAddTitle").textContent = "QR \u00b7 " + comm.name;
+    $("qrDrop").className = "drop";
+    openOvl("ovlQRAdd");
+  }
+  function qrFile(){
     var el = $("qrIn");
     el.value = "";
     el.click();
   }
+  /* area de transferencia: no PC e o caminho curto (Ctrl+C no passe) */
+  function qrClip(){
+    if (!navigator.clipboard || !navigator.clipboard.read){
+      return qrHint("Este navegador n\u00e3o deixa colar imagem. Use Foto / arquivo.");
+    }
+    navigator.clipboard.read().then(function(items){
+      for (var i = 0; i < items.length; i++){
+        var ts = items[i].types || [];
+        for (var j = 0; j < ts.length; j++){
+          if (ts[j].indexOf("image/") === 0){
+            return items[i].getType(ts[j]).then(function(b){ qrStore(b, qrTarget); });
+          }
+        }
+      }
+      qrHint("N\u00e3o achei imagem copiada. Copie o QR e tente de novo.");
+    }).catch(function(){
+      qrHint("O navegador bloqueou a leitura. Use Foto / arquivo, ou Ctrl+V aqui.");
+    });
+  }
+  function qrHint(t){ $("qrAddHint").textContent = t; }
   function qrStore(file, comm){
     var fr = new FileReader();
     fr.onerror = function(){ toast("N\u00e3o consegui ler o arquivo"); };
@@ -1852,6 +1951,7 @@ textarea:focus,input:focus,button:focus-visible,a:focus-visible{
         }
         comm.qr = 1;
         save(); renderCodes(); renderCodeStrip();
+        closeOvl("ovlQRAdd");
         toast("QR de " + comm.name + " salvo");
       };
       img.src = fr.result;
@@ -1898,7 +1998,8 @@ textarea:focus,input:focus,button:focus-visible,a:focus-visible{
     /* Geral vale em qualquer endereco: churrasqueira, storage... */
     var g = commById(GERAL_ID);
     if (g) g.locks.forEach(function(l){
-      if (l.value) row.appendChild(chip(l.label, l.value));
+      var e = expState(l);
+      if (l.value) row.appendChild(chip(l.label, l.value, e && e.bad));
     });
 
     var comm = commById(S.codes.link[a.id]);
@@ -1906,7 +2007,8 @@ textarea:focus,input:focus,button:focus-visible,a:focus-visible{
     if (comm){
       nm.textContent = "\uD83D\uDD11 " + comm.name;
       comm.locks.forEach(function(l){
-        if (l.value) row.appendChild(chip(l.label, l.value));
+        var e = expState(l);
+        if (l.value) row.appendChild(chip(l.label, l.value, e && e.bad));
       });
       if (comm.qr){
         var q = document.createElement("button");
@@ -1936,9 +2038,9 @@ textarea:focus,input:focus,button:focus-visible,a:focus-visible{
     }
     box.appendChild(row);
   }
-  function chip(label, value){
+  function chip(label, value, bad){
     var c = document.createElement("button");
-    c.type = "button"; c.className = "chip";
+    c.type = "button"; c.className = "chip" + (bad ? " bad" : "");
     var b = document.createElement("b"); b.textContent = label;
     var v = document.createElement("span"); v.textContent = value;
     c.appendChild(b); c.appendChild(v);
@@ -1963,6 +2065,25 @@ textarea:focus,input:focus,button:focus-visible,a:focus-visible{
 
     var q = norm($("codeSearch").value), list = $("commList");
     list.innerHTML = "";
+
+    /* passe vencido nao pode passar despercebido: e a diferenca entre
+       entrar e ficar parado no portao */
+    var venc = [];
+    S.codes.comms.forEach(function(c){
+      c.locks.forEach(function(l){
+        var e = expState(l);
+        if (e && e.bad) venc.push(c.name + " \u00b7 " + l.label + " (" + e.txt + ")");
+      });
+    });
+    if (venc.length){
+      var wb = document.createElement("div");
+      wb.className = "expbox";
+      var wt = document.createElement("b");
+      wt.textContent = venc.length > 1 ? venc.length + " passes vencendo" : "Passe vencendo";
+      wb.appendChild(wt);
+      wb.appendChild(document.createTextNode(venc.join(" \u00b7 ")));
+      list.appendChild(wb);
+    }
     var shown = S.codes.comms.filter(function(c){ return !q || norm(c.name).indexOf(q) > -1; });
 
     if (!shown.length){
@@ -2037,9 +2158,28 @@ textarea:focus,input:focus,button:focus-visible,a:focus-visible{
         cbCopy(l.value); toast(l.label + " copiado: " + l.value);
       });
       r.appendChild(tap);
+      var ex = expState(l);
       var sc = document.createElement("span");
-      sc.className = "l-since"; sc.textContent = l.since ? shortD(l.since) : "";
+      sc.className = "l-since" + (ex && ex.bad ? " bad" : "");
+      sc.textContent = ex ? ex.txt : (l.since ? shortD(l.since) : "");
       r.appendChild(sc);
+
+      var cal = document.createElement("button");
+      cal.type = "button"; cal.className = "l-btn"; cal.textContent = "\uD83D\uDCC5";
+      cal.setAttribute("aria-label", "Validade de " + l.label);
+      cal.addEventListener("click", function(){
+        ask("Validade \u00b7 " + l.label,
+            l.until ? ("Hoje vale at\u00e9 " + shortD(l.until) + ". Deixe vazio para tirar.")
+                    : "S\u00f3 passe vence. Portao normal pode deixar vazio.",
+            "ex.: Aug 05 2026", "Salvar", function(v){
+          var d = parseDate(v);
+          if (v.trim() && !d) return toast("N\u00e3o entendi essa data");
+          l.until = d || "";
+          save(); renderCodes(); renderCodeStrip();
+          toast(d ? "Validade salva" : "Validade removida");
+        }, true);
+      });
+      r.appendChild(cal);
       var ed = document.createElement("button");
       ed.type = "button"; ed.className = "l-btn"; ed.textContent = "\u270E";
       ed.setAttribute("aria-label", "Editar " + l.label);
@@ -2134,7 +2274,8 @@ textarea:focus,input:focus,button:focus-visible,a:focus-visible{
     ["Clubhouse",     ["clubhouse","club house","amenity","amenities","clube"]],
     ["Correio",       ["correio","mail","mailbox","buzon"]],
     ["Sa\u00edda",    ["saida","exit","salida"]],
-    ["Cadeado",       ["cadeado","lock","padlock","candado"]]
+    ["Cadeado",       ["cadeado","lock","padlock","candado"]],
+    ["Passe",         ["pass","passe","pass number","visitor pass","guest pass"]]
   ];
   function labelFor(line){
     var n = " " + norm(line) + " ", best = null, len = 0, at = 1e9;
@@ -2255,6 +2396,8 @@ textarea:focus,input:focus,button:focus-visible,a:focus-visible{
   var GERAL_ID = "GERAL";
   var RE_PREFIX = /^(c\u00f3digo|codigo|c\u00f3digos|codigos|code|codes|acess|access|acesso)\s*(code|codes)?\s*/i;
   var RE_MASTER = /entrada\s+d(a|as|e)\s+casa/i;
+  var RE_VALID_FROM = /valid\s*from|v[a\u00e1]lido\s+de|in[i\u00ed]cio/i;
+  var RE_VALID_TO   = /valid\s*(to|thro?u?g?h?|until)|v[a\u00e1]lido\s+at[e\u00e9]|expir|vence/i;
 
   var LOCKSET = {};
   LOCKWORDS.forEach(function(p){
@@ -2304,10 +2447,42 @@ textarea:focus,input:focus,button:focus-visible,a:focus-visible{
   function scanCodes(text){
     var lines = String(text || "").split(/[\r\n]+/);
     var out = [], cur = null, curName = "", blk = 0;
+    /* o passe real vem em DUAS linhas: "Valid To:" / "Wed Aug 05 2026",
+       "Pass Number:" / "3237910". Estes dois guardam o que a linha de
+       cima anunciou, pra usar na linha de baixo. */
+    var wantUntil = 0, wantSkip = 0, pendLabel = "";
 
     lines.forEach(function(raw){
       var line = stripBold(raw);
       if (!norm(line) && !/[0-9]/.test(line)) return;
+
+      /* linha de data logo depois de "Valid To:" sozinho */
+      if (wantUntil){
+        wantUntil = 0;
+        var d2 = parseDate(line);
+        if (d2){
+          if (out.length) out[out.length - 1].until = d2;
+          return;
+        }
+      }
+      /* linha de data logo depois de "Valid From:" sozinho: descartar */
+      if (wantSkip){
+        wantSkip = 0;
+        if (parseDate(line)) return;
+      }
+      /* "Valid From: Thu Jul 16 2026" -> descartar: o ano viraria "codigo" */
+      if (RE_VALID_FROM.test(line)){
+        if (!parseDate(line)) wantSkip = 1;
+        return;
+      }
+      /* "Valid To: Wed Aug 05 2026" -> validade do ultimo codigo lido */
+      if (RE_VALID_TO.test(line)){
+        var dt = parseDate(line);
+        if (dt){
+          if (out.length) out[out.length - 1].until = dt;
+        } else wantUntil = 1;
+        return;
+      }
 
       /* instrucao de acesso: nao e codigo, mas e informacao de portao */
       if (RE_NOTE.test(line)){
@@ -2337,6 +2512,13 @@ textarea:focus,input:focus,button:focus-visible,a:focus-visible{
 
       var rest = leftoverWords(line, codes);
 
+      /* "Pass Number:" sozinho: rotula a linha de baixo, nao e lugar */
+      if (!codes.length && !rest.length){
+        var pl = labelFor(line);
+        if (pl) pendLabel = pl;
+        return;
+      }
+
       if (rest.length){                       /* a linha nomeia um lugar */
         var nome = placeName(line, codes);
         var hit = matchComm(nome);
@@ -2345,8 +2527,10 @@ textarea:focus,input:focus,button:focus-visible,a:focus-visible{
         curName = hit ? "" : nome;
       }
       if (codes.length){
-        out.push({ comm:cur, newName:curName, blk:blk,
-                   label: labelFor(line) || "Gate",
+        var lb = labelFor(line) || pendLabel || "Gate";
+        pendLabel = "";
+        out.push({ comm: cur, newName: curName, blk: blk,
+                   label: lb,
                    value: codes.join(" ou "),   /* "#8563 ou #5598": as duas valem */
                    line: line.trim() });
       }
@@ -2426,6 +2610,14 @@ textarea:focus,input:focus,button:focus-visible,a:focus-visible{
         }
         var nv = document.createElement("code"); nv.textContent = o.value;
         t.appendChild(nv);
+      }
+      if (o.until){
+        var ex = expState({until:o.until});
+        var eb = document.createElement("i");
+        eb.textContent = " \u00b7 " + ex.txt;
+        eb.style.cssText = "font-style:normal;font-size:11px;"
+          + (ex.bad ? "font-weight:600;color:var(--crit)" : "color:var(--ink-3)");
+        t.appendChild(eb);
       }
       r.appendChild(t);
 
@@ -2567,8 +2759,9 @@ textarea:focus,input:focus,button:focus-visible,a:focus-visible{
     document.body.style.overflow = "";
   }
 
-  var askCb = null;
-  function ask(title, help, placeholder, okLabel, cb){
+  var askCb = null, askAllowEmpty = false;
+  function ask(title, help, placeholder, okLabel, cb, allowEmpty){
+    askAllowEmpty = !!allowEmpty;
     $("askTitle").textContent = title;
     $("askHelp").textContent = help;
     $("askInput").value = "";
@@ -2582,8 +2775,9 @@ textarea:focus,input:focus,button:focus-visible,a:focus-visible{
   $("askOk").addEventListener("click", function(){
     var v = $("askInput").value.trim();
     var cb = askCb; askCb = null;
+    var empty = askAllowEmpty; askAllowEmpty = false;
     closeOvl("ovlAsk");
-    if (v && cb) cb(v);
+    if (cb && (v || empty)) cb(v);
   });
   $("askInput").addEventListener("keydown", function(e){
     if (e.key === "Enter"){ e.preventDefault(); $("askOk").click(); }
@@ -2850,7 +3044,7 @@ textarea:focus,input:focus,button:focus-visible,a:focus-visible{
       if (o.master){ setMaster(o.value); n++; return; }
       var c = o.comm || (o.newName ? addComm(o.newName) : null);
       if (!c) return;
-      setLock(c, o.label, o.value); n++;
+      setLock(c, o.label, o.value, o.until); n++;
     });
     pending = [];
     save(); renderCodes(); renderCodeStrip();
@@ -2864,6 +3058,43 @@ textarea:focus,input:focus,button:focus-visible,a:focus-visible{
     this.value = "";
   });
   $("qrClose").addEventListener("click", function(){ closeOvl("ovlQR"); });
+  $("qrAddClose").addEventListener("click", function(){ closeOvl("ovlQRAdd"); });
+  $("qrFromFile").addEventListener("click", qrFile);
+  $("qrFromClip").addEventListener("click", qrClip);
+
+  /* Ctrl+V com a folha aberta */
+  document.addEventListener("paste", function(e){
+    if ($("ovlQRAdd").hidden || !qrTarget) return;
+    var it = (e.clipboardData && e.clipboardData.items) || [];
+    for (var i = 0; i < it.length; i++){
+      if (it[i].type && it[i].type.indexOf("image/") === 0){
+        var f = it[i].getAsFile();
+        if (f){ e.preventDefault(); qrStore(f, qrTarget); return; }
+      }
+    }
+    qrHint("O que voc\u00ea colou n\u00e3o era imagem.");
+  });
+
+  /* arrastar e soltar (PC) */
+  (function(){
+    var d = $("qrDrop");
+    ["dragenter","dragover"].forEach(function(ev){
+      d.addEventListener(ev, function(e){
+        e.preventDefault(); d.className = "drop over";
+      });
+    });
+    ["dragleave","dragend"].forEach(function(ev){
+      d.addEventListener(ev, function(){ d.className = "drop"; });
+    });
+    d.addEventListener("drop", function(e){
+      e.preventDefault(); d.className = "drop";
+      var f = e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files[0];
+      if (f && qrTarget) qrStore(f, qrTarget);
+      else qrHint("N\u00e3o veio imagem nesse arrasto.");
+    });
+    d.addEventListener("click", qrFile);
+  })();
+
   $("qrSwap").addEventListener("click", function(){
     closeOvl("ovlQR");
     if (qrTarget) qrPick(qrTarget);
