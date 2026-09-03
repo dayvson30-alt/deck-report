@@ -488,6 +488,17 @@ textarea:focus,input:focus,button:focus-visible,a:focus-visible{
 .pickrow:active{background:var(--accent-soft);border-color:var(--accent)}
 .emptyc{padding:18px 4px;text-align:center;font:400 13px/1.6 Barlow,sans-serif;
   color:var(--ink-3)}
+.qrb{font:600 11px/1 Barlow,sans-serif;letter-spacing:.05em;padding:7px 9px;
+  border:1px solid var(--line-strong);border-radius:var(--r-s);
+  background:var(--surface);color:var(--ink-3);flex:0 0 auto}
+.qrb.on{border-color:var(--accent);color:var(--accent);background:var(--accent-soft)}
+/* fundo branco de verdade: leitor de portao precisa de contraste */
+.qr-sheet{background:#fff;color:#111}
+.qr-sheet h2{color:#111}
+#qrImg{display:block;margin:14px auto 6px;width:100%;
+  max-width:min(84vw,400px);background:#fff;border:10px solid #fff;
+  border-radius:4px;image-rendering:pixelated}
+.qr-tip{text-align:center;font:400 12px/1.5 Barlow,sans-serif;color:#555;margin:0 0 6px}
 </style>
 <div class="wrap">
   <header>
@@ -679,6 +690,20 @@ textarea:focus,input:focus,button:focus-visible,a:focus-visible{
     </div>
   </div>
 </div>
+
+<div class="ovl" id="ovlQR" hidden>
+  <div class="sheet qr-sheet">
+    <h2 id="qrName">QR</h2>
+    <img id="qrImg" alt="QR code do condom&iacute;nio">
+    <p class="qr-tip">Aumente o brilho da tela e aproxime do leitor.</p>
+    <div class="bar-inner">
+      <button type="button" class="btn btn-ghost" id="qrSwap">Trocar</button>
+      <button type="button" class="btn btn-ghost" id="qrKill">Apagar</button>
+      <button type="button" class="btn btn-primary" id="qrClose">Fechar</button>
+    </div>
+  </div>
+</div>
+<input type="file" accept="image/*" id="qrIn" hidden>
 
 <div class="ovl" id="ovlAsk" hidden>
   <div class="sheet">
@@ -1756,7 +1781,7 @@ textarea:focus,input:focus,button:focus-visible,a:focus-visible{
     if (ex) return ex;
     var m = {id:uid(), name:n, locks:[]};
     S.codes.comms.push(m);
-    S.codes.comms.sort(function(a,b){ return norm(a.name) < norm(b.name) ? -1 : 1; });
+    sortComms();
     return m;
   }
   /* troca guarda o anterior com a data: cadeado que nao abre precisa do velho */
@@ -1780,6 +1805,69 @@ textarea:focus,input:focus,button:focus-visible,a:focus-visible{
     if (m.value) m.prev.unshift({value:m.value, until:today()});
     m.prev = m.prev.slice(0, 4);
     m.value = value; m.since = today();
+  }
+
+  /* ---------- QR de condominio ----------
+     Alguns condominios usam QR no portao em vez de teclado. A imagem
+     fica no celular (chave separada por condominio, pra uma imagem
+     grande nao derrubar o resto do estado) e abre em tela cheia com
+     fundo branco. Funciona SEM internet - no portao pode nao ter sinal. */
+  function qrKey(id){ return KEY + ".qr." + id; }
+  function qrGet(id){
+    try { return localStorage.getItem(qrKey(id)) || ""; } catch(e){ return ""; }
+  }
+  function qrSet(id, data){
+    try { localStorage.setItem(qrKey(id), data); return true; } catch(e){ return false; }
+  }
+  function qrDel(id){ try { localStorage.removeItem(qrKey(id)); } catch(e){} }
+
+  var qrTarget = null;
+  function qrPick(comm){
+    qrTarget = comm;
+    var el = $("qrIn");
+    el.value = "";
+    el.click();
+  }
+  function qrStore(file, comm){
+    var fr = new FileReader();
+    fr.onerror = function(){ toast("N\u00e3o consegui ler o arquivo"); };
+    fr.onload = function(){
+      var img = new Image();
+      img.onerror = function(){ toast("N\u00e3o consegui abrir essa imagem"); };
+      img.onload = function(){
+        var max = 640, sc = Math.min(1, max / Math.max(img.width, img.height));
+        var w = Math.max(1, Math.round(img.width * sc));
+        var h = Math.max(1, Math.round(img.height * sc));
+        var cv = document.createElement("canvas");
+        cv.width = w; cv.height = h;
+        var cx = cv.getContext("2d");
+        cx.fillStyle = "#fff"; cx.fillRect(0, 0, w, h);   /* PNG sem transparencia */
+        cx.drawImage(img, 0, 0, w, h);
+        var data;
+        try { data = cv.toDataURL("image/png"); }
+        catch(e){ toast("N\u00e3o consegui processar a imagem"); return; }
+        if (!qrSet(comm.id, data)){
+          toast("Sem espa\u00e7o no celular pra guardar o QR");
+          return;
+        }
+        comm.qr = 1;
+        save(); renderCodes(); renderCodeStrip();
+        toast("QR de " + comm.name + " salvo");
+      };
+      img.src = fr.result;
+    };
+    fr.readAsDataURL(file);
+  }
+  function openQR(comm){
+    var d = qrGet(comm.id);
+    if (!d){
+      comm.qr = 0; save(); renderCodes();
+      return qrPick(comm);
+    }
+    qrTarget = comm;
+    $("qrName").textContent = comm.name;
+    $("qrImg").src = d;
+    openOvl("ovlQR");
   }
 
   /* ---------- barra contextual na tela do report ---------- */
@@ -1807,12 +1895,28 @@ textarea:focus,input:focus,button:focus-visible,a:focus-visible{
 
     if (S.codes.master.value) row.appendChild(chip("Casa", S.codes.master.value));
 
+    /* Geral vale em qualquer endereco: churrasqueira, storage... */
+    var g = commById(GERAL_ID);
+    if (g) g.locks.forEach(function(l){
+      if (l.value) row.appendChild(chip(l.label, l.value));
+    });
+
     var comm = commById(S.codes.link[a.id]);
+    if (comm && comm.id === GERAL_ID) comm = null;
     if (comm){
       nm.textContent = "\uD83D\uDD11 " + comm.name;
       comm.locks.forEach(function(l){
         if (l.value) row.appendChild(chip(l.label, l.value));
       });
+      if (comm.qr){
+        var q = document.createElement("button");
+        q.type = "button"; q.className = "chip";
+        var qb = document.createElement("b"); qb.textContent = "QR";
+        var qv = document.createElement("span"); qv.textContent = "abrir";
+        q.appendChild(qb); q.appendChild(qv);
+        q.addEventListener("click", function(){ openQR(comm); });
+        row.appendChild(q);
+      }
       if (!comm.locks.length){
         var add = document.createElement("button");
         add.type = "button"; add.className = "chip";
@@ -1880,6 +1984,16 @@ textarea:focus,input:focus,button:focus-visible,a:focus-visible{
     var h = document.createElement("h3");
     var n = document.createElement("span"); n.className = "c-n"; n.textContent = c.name;
     h.appendChild(n);
+    var qrb = document.createElement("button");
+    qrb.type = "button";
+    qrb.className = "qrb" + (c.qr ? " on" : "");
+    qrb.textContent = c.qr ? "QR \u2713" : "+ QR";
+    qrb.setAttribute("aria-label", c.qr ? "Ver QR" : "Adicionar QR");
+    qrb.addEventListener("click", function(){
+      if (c.qr) openQR(c); else qrPick(c);
+    });
+    h.appendChild(qrb);
+
     var plus = document.createElement("button");
     plus.type = "button"; plus.className = "l-btn"; plus.textContent = "+";
     plus.setAttribute("aria-label", "Novo c\u00f3digo");
@@ -1893,6 +2007,7 @@ textarea:focus,input:focus,button:focus-visible,a:focus-visible{
           "Escreva APAGAR para confirmar. Some com todos os c\u00f3digos dele.",
           "APAGAR", "Apagar", function(v){
         if (norm(v) !== "apagar") return;
+        qrDel(c.id);
         S.codes.comms = S.codes.comms.filter(function(x){ return x.id !== c.id; });
         Object.keys(S.codes.link).forEach(function(k){
           if (S.codes.link[k] === c.id) delete S.codes.link[k];
@@ -1995,6 +2110,7 @@ textarea:focus,input:focus,button:focus-visible,a:focus-visible{
       l.appendChild(e);
     }
     S.codes.comms.forEach(function(c){
+      if (c.id === GERAL_ID) return;      /* Geral vale pra todas, nao se vincula */
       var b = document.createElement("button");
       b.type = "button"; b.className = "pickrow"; b.textContent = c.name;
       b.addEventListener("click", function(){
@@ -2130,6 +2246,61 @@ textarea:focus,input:focus,button:focus-visible,a:focus-visible{
     return hit;
   }
 
+  /* ---- CODIGOS GERAIS (2a msg real, 02/09/2026) ----
+     "Churrasqueira summer 5943", "codigo cadeado storage 0709",
+     "Acess Code gate storage *33613760#", "entrada das casa 484126".
+     Nome e codigo na MESMA linha, e nao pertencem a condominio nenhum:
+     valem em qualquer lugar. Vao pro condominio especial "Geral", que
+     aparece em TODA casa. "entrada das casas" vai pro card mestre. */
+  var GERAL_ID = "GERAL";
+  var RE_PREFIX = /^(c\u00f3digo|codigo|c\u00f3digos|codigos|code|codes|acess|access|acesso)\s*(code|codes)?\s*/i;
+  var RE_MASTER = /entrada\s+d(a|as|e)\s+casa/i;
+
+  var LOCKSET = {};
+  LOCKWORDS.forEach(function(p){
+    p[1].forEach(function(w){ LOCKSET[w.split(" ")[0]] = 1; });
+  });
+
+  function geral(){
+    var g = commById(GERAL_ID);
+    if (!g){
+      g = {id:GERAL_ID, name:"Geral", locks:[]};
+      S.codes.comms.push(g);
+      sortComms();
+    }
+    return g;
+  }
+  function sortComms(){
+    S.codes.comms.sort(function(a,b){
+      if (a.id === GERAL_ID) return -1;
+      if (b.id === GERAL_ID) return 1;
+      return norm(a.name) < norm(b.name) ? -1 : 1;
+    });
+  }
+
+  /* rotulo completo da linha: tira o codigo e o prefixo "codigo/acess code".
+     "Churrasqueira summer 5943" -> "Churrasqueira summer" */
+  function fullLabel(line, codes){
+    var t = line;
+    codes.forEach(function(c){ t = t.split(c).join(" "); });
+    t = t.replace(/\s+/g, " ").trim().replace(RE_PREFIX, "");
+    t = t.replace(/^[\s:\-\u2013]+/, "").replace(/[\s:\-\u2013]+$/, "");
+    if (!t) return labelFor(line) || "Gate";
+    return t.charAt(0).toUpperCase() + t.slice(1);
+  }
+
+  /* linha global = comeca com rotulo de cadeado E tem qualificador extra
+     ("summer", "storage", "normal"). "gate 1920" solto NAO e global:
+     continua sendo o portao do condominio da linha de cima. */
+  function isGlobalLine(line, codes){
+    var n = norm(line).replace(RE_PREFIX, "").trim();
+    var w = n.split(" ").filter(function(x){ return x && !/^[0-9]+$/.test(x); });
+    if (!w.length || !LOCKSET[w[0]]) return false;
+    var extra = 0;
+    w.slice(1).forEach(function(x){ if (!FILLER[x]) extra++; });
+    return extra > 0;
+  }
+
   function scanCodes(text){
     var lines = String(text || "").split(/[\r\n]+/);
     var out = [], cur = null, curName = "", blk = 0;
@@ -2149,7 +2320,22 @@ textarea:focus,input:focus,button:focus-visible,a:focus-visible{
       }
 
       var codes = extractCodes(line);
-      var rest  = leftoverWords(line, codes);
+
+      /* "entrada das casa 484126" -> codigo mestre, nao e de condominio */
+      if (codes.length && RE_MASTER.test(line)){
+        out.push({ master:true, blk:++blk, label:"Entrada das casas",
+                   value: codes.join(" ou "), line: line.trim() });
+        return;
+      }
+      /* "Churrasqueira summer 5943" -> vale em qualquer casa */
+      if (codes.length && isGlobalLine(line, codes)){
+        out.push({ comm: geral(), newName:"", blk:++blk,
+                   label: fullLabel(line, codes),
+                   value: codes.join(" ou "), line: line.trim() });
+        return;
+      }
+
+      var rest = leftoverWords(line, codes);
 
       if (rest.length){                       /* a linha nomeia um lugar */
         var nome = placeName(line, codes);
@@ -2170,7 +2356,8 @@ textarea:focus,input:focus,button:focus-visible,a:focus-visible{
     var seen = {}, ded = [];
     for (var i = out.length - 1; i >= 0; i--){
       var o = out[i];
-      var k = (o.comm ? o.comm.id : "n:" + norm(o.newName || "?")) + "|" + norm(o.label);
+      var k = (o.master ? "MASTER" : o.comm ? o.comm.id
+                : "n:" + norm(o.newName || "?")) + "|" + norm(o.label);
       if (seen[k]) continue;
       seen[k] = 1; ded.unshift(o);
     }
@@ -2179,6 +2366,12 @@ textarea:focus,input:focus,button:focus-visible,a:focus-visible{
   }
   function refreshOld(o){
     o.old = "";
+    if (o.master){
+      o.old = S.codes.master.value || "";
+      o.same = (o.old === o.value);
+      o.on = !o.same;
+      return;
+    }
     if (o.comm){
       o.comm.locks.forEach(function(l){ if (norm(l.label) === norm(o.label)) o.old = l.value; });
     }
@@ -2211,9 +2404,10 @@ textarea:focus,input:focus,button:focus-visible,a:focus-visible{
       var t = document.createElement("div");
       t.className = "g-txt";
       var who = document.createElement("b");
-      who.textContent = o.comm ? o.comm.name : (o.newName || "? condom\u00ednio");
+      who.textContent = o.master ? "\uD83D\uDD11 Entrada das casas"
+                       : o.comm ? o.comm.name : (o.newName || "? condom\u00ednio");
       t.appendChild(who);
-      if (!o.comm && o.newName){
+      if (!o.comm && !o.master && o.newName){
         var tag = document.createElement("i");
         tag.textContent = " novo";
         tag.style.cssText = "font-style:normal;font-size:10px;letter-spacing:.06em;"
@@ -2237,9 +2431,11 @@ textarea:focus,input:focus,button:focus-visible,a:focus-visible{
 
       var pick = document.createElement("button");
       pick.type = "button"; pick.className = "l-btn";
-      pick.textContent = (o.comm || o.newName) ? "\u270E" : "\u2753";
+      pick.textContent = o.master ? "\uD83D\uDD11"
+                       : (o.comm || o.newName) ? "\u270E" : "\u2753";
       pick.setAttribute("aria-label", "Escolher condom\u00ednio");
       pick.addEventListener("click", function(){
+        if (o.master) return;
         $("pickTitle").textContent = "De qual condom\u00ednio?";
         $("pickHelp").textContent = o.label + ": " + o.value;
         pickCb = function(c){
@@ -2638,7 +2834,9 @@ textarea:focus,input:focus,button:focus-visible,a:focus-visible{
   $("pasteScan").addEventListener("click", function(){
     pending = scanCodes($("pasteText").value);
     renderReview();
-    var semComm = pending.filter(function(o){ return !o.comm && !o.newName; }).length;
+    var semComm = pending.filter(function(o){
+      return !o.comm && !o.newName && !o.master;
+    }).length;
     $("pasteHint").textContent = !pending.length
       ? "Nada encontrado. D\u00e1 pra cadastrar na m\u00e3o pelo + Condom\u00ednio."
       : (semComm ? ("Confira antes de salvar. " + semComm + " sem condom\u00ednio \u2014 toque no ? pra escolher.")
@@ -2649,6 +2847,7 @@ textarea:focus,input:focus,button:focus-visible,a:focus-visible{
     var n = 0;
     pending.forEach(function(o){
       if (!o.on || o.same) return;
+      if (o.master){ setMaster(o.value); n++; return; }
       var c = o.comm || (o.newName ? addComm(o.newName) : null);
       if (!c) return;
       setLock(c, o.label, o.value); n++;
@@ -2657,6 +2856,28 @@ textarea:focus,input:focus,button:focus-visible,a:focus-visible{
     save(); renderCodes(); renderCodeStrip();
     closeOvl("ovlPaste");
     toast(n ? (n + (n > 1 ? " c\u00f3digos atualizados" : " c\u00f3digo atualizado")) : "Nada mudou");
+  });
+
+  $("qrIn").addEventListener("change", function(){
+    var f = this.files && this.files[0];
+    if (f && qrTarget) qrStore(f, qrTarget);
+    this.value = "";
+  });
+  $("qrClose").addEventListener("click", function(){ closeOvl("ovlQR"); });
+  $("qrSwap").addEventListener("click", function(){
+    closeOvl("ovlQR");
+    if (qrTarget) qrPick(qrTarget);
+  });
+  $("qrKill").addEventListener("click", function(){
+    if (!qrTarget) return;
+    var c = qrTarget;
+    ask("Apagar o QR de " + c.name + "?", "Escreva APAGAR para confirmar.",
+        "APAGAR", "Apagar", function(v){
+      if (norm(v) !== "apagar") return;
+      qrDel(c.id); c.qr = 0;
+      save(); renderCodes(); renderCodeStrip(); closeOvl("ovlQR");
+      toast("QR apagado");
+    });
   });
 
   $("pickCancel").addEventListener("click", function(){
