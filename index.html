@@ -517,13 +517,19 @@ textarea:focus,input:focus,button:focus-visible,a:focus-visible{
 .drop.over{border-color:var(--accent);background:var(--accent-soft);color:var(--accent)}
 .drop small{display:block;margin-top:5px;font-weight:400;font-size:12px}
 .qr-hint{font:400 12px/1.5 Barlow,sans-serif;color:var(--ink-2);margin:8px 0 0}
+.ver{display:inline-block;font:600 9px/1 Barlow,sans-serif;letter-spacing:.08em;
+  color:var(--ink-3);border:1px solid var(--line-strong);border-radius:4px;
+  padding:3px 4px;margin-left:7px;vertical-align:1px}
+.urlbox{font:500 13px/1.4 "IBM Plex Mono",monospace;color:var(--ink);
+  background:var(--surface-2);border:1px solid var(--line);border-radius:var(--r-s);
+  padding:10px 11px;word-break:break-all;margin-bottom:8px}
 </style>
 <div class="wrap">
   <header>
     <div class="mark">FF</div>
     <div>
       <h1>Deck Report</h1>
-      <span class="clock" id="clock">—</span>
+      <span class="clock" id="clock">—</span><span class="ver" id="ver"></span>
     </div>
     <button class="icon-btn" id="openCodes" title="Códigos" aria-label="Códigos">🔑</button>
     <button class="icon-btn" id="openSettings" title="Ajustes / Settings" aria-label="Ajustes">⚙</button>
@@ -803,6 +809,17 @@ textarea:focus,input:focus,button:focus-visible,a:focus-visible{
     </div>
 
     <div class="field">
+      <label>&Iacute;cone na tela de in&iacute;cio</label>
+      <div class="urlbox" id="appUrl">&mdash;</div>
+      <button type="button" class="mini wide" id="copyUrl">Copiar endere&ccedil;o do app</button>
+      <small>No Safari, abra <b>este</b> endere&ccedil;o &rarr; Compartilhar &rarr;
+        <b>Adicionar &agrave; Tela de In&iacute;cio</b>.
+        Se voc&ecirc; tem um &iacute;cone antigo que abre outra tela,
+        <b>apague o antigo</b>: ele aponta pro banco de testes, que ficou
+        parado em agosto e tem dados separados.</small>
+    </div>
+
+    <div class="field">
       <label for="backupBtn">Backup</label>
       <button type="button" class="mini wide" id="backupBtn">Ver link com meus endere&ccedil;os</button>
       <small>Salve o link nos favoritos. Se o celular limpar os dados, o link traz tudo de volta.</small>
@@ -854,6 +871,10 @@ textarea:focus,input:focus,button:focus-visible,a:focus-visible{
     var r = document.getElementById("rowNext");
     if (r) r.hidden = true;
   }
+
+  /* selo visivel de versao: no iPhone e a unica forma pratica de saber
+     se o atalho abriu o app certo ou o banco de testes antigo */
+  var BUILD = "3set";
 
   var $ = function(id){ return document.getElementById(id); };
 
@@ -3324,6 +3345,16 @@ textarea:focus,input:focus,button:focus-visible,a:focus-visible{
   };
 
   codesFix();
+
+  $("ver").textContent = "v" + BUILD;
+  (function(){
+    /* sem o "index.html" no fim: endereco limpo e o que ele deve guardar */
+    var u = location.origin + location.pathname.replace(/index\.html?$/i, "");
+    $("appUrl").textContent = u;
+    $("copyUrl").addEventListener("click", function(){
+      cbCopy(u); toast("Endere\u00e7o copiado");
+    });
+  })();
 
   renderAddrs();
   renderIssues();
