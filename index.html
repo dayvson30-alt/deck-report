@@ -421,6 +421,74 @@ textarea:focus,input:focus,button:focus-visible,a:focus-visible{
 @media (prefers-reduced-motion:reduce){.toast{transition:none}}
 </style>
 
+<style>
+/* ---------- codigos ---------- */
+#codeStrip[hidden]{display:none}
+#codeStrip{margin-top:10px;border:1px solid var(--line);border-radius:var(--r-m);
+  background:var(--surface-2);padding:10px 12px}
+#codeStrip .cs-top{display:flex;align-items:center;gap:8px;margin-bottom:6px}
+#codeStrip .cs-name{font:600 13px/1.2 "Barlow Semi Condensed",sans-serif;
+  letter-spacing:.04em;text-transform:uppercase;color:var(--ink-2);flex:1}
+#codeStrip .cs-more{font:500 12px/1 Barlow,sans-serif;color:var(--accent);
+  background:none;border:0;padding:6px 4px}
+.chip-row{display:flex;flex-wrap:wrap;gap:8px}
+.chip{display:flex;align-items:baseline;gap:7px;background:var(--surface);
+  border:1px solid var(--line-strong);border-radius:var(--r-s);
+  padding:8px 11px;min-height:40px}
+.chip b{font:500 11px/1 Barlow,sans-serif;letter-spacing:.05em;
+  text-transform:uppercase;color:var(--ink-3)}
+.chip span{font:500 17px/1 "IBM Plex Mono",monospace;color:var(--ink);
+  letter-spacing:.06em}
+.chip:active{background:var(--accent-soft);border-color:var(--accent)}
+.sheet-full{max-height:92vh}
+.mstr{border:1px solid var(--accent);background:var(--accent-soft);
+  border-radius:var(--r-m);padding:12px 14px;display:flex;align-items:center;gap:12px}
+.mstr .m-txt{flex:1;min-width:0}
+.mstr .m-lbl{font:600 11px/1.3 "Barlow Semi Condensed",sans-serif;
+  letter-spacing:.06em;text-transform:uppercase;color:var(--accent)}
+.mstr .m-val{font:500 30px/1.1 "IBM Plex Mono",monospace;color:var(--ink);
+  letter-spacing:.08em;word-break:break-all}
+.mstr .m-val.empty-v{font-size:16px;color:var(--ink-3);letter-spacing:0}
+.mstr .m-since{font:400 11px/1.3 Barlow,sans-serif;color:var(--ink-2)}
+.comm{border:1px solid var(--line);border-radius:var(--r-m);
+  background:var(--surface);margin-top:10px;overflow:hidden}
+.comm > h3{margin:0;padding:11px 13px 9px;background:var(--surface-2);
+  border-bottom:1px solid var(--line);display:flex;align-items:center;gap:8px;
+  font:600 14px/1.2 "Barlow Semi Condensed",sans-serif;letter-spacing:.04em;
+  text-transform:uppercase;color:var(--ink)}
+.comm > h3 .c-n{flex:1;min-width:0}
+.lockrow{display:flex;align-items:center;gap:10px;padding:9px 13px;
+  border-top:1px solid var(--line)}
+.lockrow:first-of-type{border-top:0}
+.lockrow .l-tap{flex:1;display:flex;align-items:baseline;gap:10px;
+  background:none;border:0;padding:4px 0;text-align:left;min-width:0}
+.lockrow .l-lbl{font:500 12px/1.3 Barlow,sans-serif;color:var(--ink-2);
+  min-width:74px;flex:0 0 auto}
+.lockrow .l-val{font:500 22px/1.1 "IBM Plex Mono",monospace;color:var(--ink);
+  letter-spacing:.07em;word-break:break-all}
+.lockrow .l-since{font:400 11px/1 Barlow,sans-serif;color:var(--ink-3);
+  flex:0 0 auto;white-space:nowrap}
+.lockrow .l-btn{background:none;border:0;color:var(--ink-3);font-size:15px;
+  padding:8px 5px;flex:0 0 auto}
+.lockrow:active{background:var(--accent-soft)}
+.prevbox{padding:2px 13px 10px;font:400 12px/1.6 Barlow,sans-serif;color:var(--ink-3)}
+.prevbox s{font-family:"IBM Plex Mono",monospace;color:var(--ink-2)}
+.chg{display:flex;align-items:center;gap:10px;padding:10px 2px;
+  border-top:1px solid var(--line)}
+.chg input{width:22px;height:22px;flex:0 0 auto;accent-color:var(--accent)}
+.chg .g-txt{flex:1;min-width:0;font:400 13px/1.45 Barlow,sans-serif;color:var(--ink-2)}
+.chg .g-txt b{color:var(--ink);font-weight:600}
+.chg .g-txt code{font:500 15px/1 "IBM Plex Mono",monospace;color:var(--ink);
+  letter-spacing:.05em}
+.chg .g-txt s{font-family:"IBM Plex Mono",monospace;color:var(--ink-3)}
+.chg.new .g-txt b{color:var(--ok)}
+.pickrow{display:block;width:100%;text-align:left;background:var(--surface);
+  border:1px solid var(--line);border-radius:var(--r-s);padding:13px;
+  margin-top:8px;font:500 15px/1.2 Barlow,sans-serif;color:var(--ink);min-height:var(--tap)}
+.pickrow:active{background:var(--accent-soft);border-color:var(--accent)}
+.emptyc{padding:18px 4px;text-align:center;font:400 13px/1.6 Barlow,sans-serif;
+  color:var(--ink-3)}
+</style>
 <div class="wrap">
   <header>
     <div class="mark">FF</div>
@@ -428,6 +496,7 @@ textarea:focus,input:focus,button:focus-visible,a:focus-visible{
       <h1>Deck Report</h1>
       <span class="clock" id="clock">—</span>
     </div>
+    <button class="icon-btn" id="openCodes" title="Códigos" aria-label="Códigos">🔑</button>
     <button class="icon-btn" id="openSettings" title="Ajustes / Settings" aria-label="Ajustes">⚙</button>
   </header>
 
@@ -437,6 +506,7 @@ textarea:focus,input:focus,button:focus-visible,a:focus-visible{
            placeholder="Buscar casa — ex.: 2924 ou penelope"
            autocomplete="off" autocorrect="off" autocapitalize="off">
     <div class="addr-row" id="addrList"></div>
+    <div id="codeStrip" hidden></div>
     <div class="mini-row" id="rowRoute">
       <button type="button" class="mini wide" id="pasteRoute">📋 Colar rota do Skimmer</button>
     </div>
@@ -554,6 +624,62 @@ textarea:focus,input:focus,button:focus-visible,a:focus-visible{
   </div>
 </div>
 
+<div class="ovl" id="ovlCodes" hidden>
+  <div class="sheet sheet-full">
+    <h2>C&oacute;digos</h2>
+    <div class="mstr" id="masterCard">
+      <div class="m-txt">
+        <div class="m-lbl">Entrada das casas &middot; padr&atilde;o FF</div>
+        <div class="m-val empty-v" id="masterVal">toque em &#9998; para definir</div>
+        <div class="m-since" id="masterSince"></div>
+      </div>
+      <button type="button" class="l-btn" id="masterEdit" aria-label="Editar">&#9998;</button>
+    </div>
+    <input type="search" class="search" id="codeSearch" style="margin-top:12px"
+           placeholder="Buscar condom&iacute;nio &mdash; ex.: storey"
+           autocomplete="off" autocorrect="off" autocapitalize="off">
+    <div id="commList"></div>
+    <div class="mini-row" style="margin-top:12px">
+      <button type="button" class="mini" id="pasteCodes">&#128203; Colar msg</button>
+      <button type="button" class="mini" id="addCommBtn">+ Condom&iacute;nio</button>
+    </div>
+    <p style="margin:10px 0 0;font:400 12px/1.5 Barlow,sans-serif;color:var(--ink-3)">
+      Fica s&oacute; neste celular. C&oacute;digo de acesso <b>nunca</b> vai pro link de backup
+      nem pro reposit&oacute;rio &mdash; link pode vazar.
+    </p>
+    <div class="bar-inner">
+      <button type="button" class="btn btn-ghost wide" id="codesClose">Fechar</button>
+    </div>
+  </div>
+</div>
+
+<div class="ovl" id="ovlPaste" hidden>
+  <div class="sheet">
+    <h2>Colar mensagem do supervisor</h2>
+    <p id="pasteHint">Cole a mensagem inteira. Eu procuro os c&oacute;digos e mostro <b>o que vai mudar</b> antes de salvar.</p>
+    <textarea id="pasteText" rows="5" spellcheck="false"
+              placeholder="Ex.: Storey Lake gate mudou para 4455, lixeira 2211"></textarea>
+    <div id="pasteReview"></div>
+    <div class="bar-inner">
+      <button type="button" class="btn btn-ghost" id="pasteCancel">Cancelar</button>
+      <button type="button" class="btn btn-primary" id="pasteScan">Procurar c&oacute;digos</button>
+      <button type="button" class="btn btn-primary" id="pasteApply" hidden>Salvar</button>
+    </div>
+  </div>
+</div>
+
+<div class="ovl" id="ovlPick" hidden>
+  <div class="sheet">
+    <h2 id="pickTitle">Condom&iacute;nio</h2>
+    <p id="pickHelp">.</p>
+    <div id="pickList"></div>
+    <div class="bar-inner">
+      <button type="button" class="btn btn-ghost" id="pickCancel">Cancelar</button>
+      <button type="button" class="btn btn-primary" id="pickNew">+ Novo</button>
+    </div>
+  </div>
+</div>
+
 <div class="ovl" id="ovlAsk" hidden>
   <div class="sheet">
     <h2 id="askTitle">.</h2>
@@ -637,7 +763,8 @@ textarea:focus,input:focus,button:focus-visible,a:focus-visible{
     addresses:[], current:null,
     route:[], done:[], showAll:false, q:"", picking:false,
     counts:{}, custom:[], note:"", shots:[],
-    ledger:{}, history:[]
+    ledger:{}, history:[],
+    codes:{ master:{value:"",since:"",prev:[]}, comms:[], link:{} }
   };
 
   /* trava pra não contar duas vezes o mesmo report (Copiar + WhatsApp) */
@@ -674,6 +801,7 @@ textarea:focus,input:focus,button:focus-visible,a:focus-visible{
         S.route = Array.isArray(d.route) ? d.route : [];
         S.done = Array.isArray(d.done) ? d.done : [];
         S.ledger = (d.ledger && typeof d.ledger === "object") ? d.ledger : {};
+        if (d.codes && typeof d.codes === "object") S.codes = d.codes;
         Object.keys(S.ledger).forEach(function(k){
           if (NOCOUNT[k.split("|")[1]]) delete S.ledger[k];
         });
@@ -739,7 +867,8 @@ textarea:focus,input:focus,button:focus-visible,a:focus-visible{
       localStorage.setItem(KEY, JSON.stringify({
         name:S.name, phone:S.phone, lang:S.lang,
         addresses:S.addresses, route:S.route, done:S.done,
-        ledger:S.ledger, history:S.history.slice(0,12)
+        ledger:S.ledger, history:S.history.slice(0,12),
+        codes:S.codes
       }));
     } catch(e){}
   }
@@ -1556,6 +1685,479 @@ textarea:focus,input:focus,button:focus-visible,a:focus-visible{
     toastTimer = setTimeout(function(){ el.classList.remove("show"); }, 2200);
   }
 
+  /* =================================================================
+     CODIGOS DE ACESSO
+     Dois niveis so, porque a realidade tem dois:
+       master  -> entrada das casas, unico, padrao Florida Fun
+       comms[] -> condominio: gate, lixeira, cadeados (o que muda toda semana)
+     Casa -> condominio via S.codes.link[addrId]. Nada disso vai pro
+     repositorio publico: mora so no localStorage deste celular.
+     ================================================================= */
+  function codesFix(){
+    var c = S.codes;
+    if (!c || typeof c !== "object") c = S.codes = {};
+    if (!c.master || typeof c.master !== "object") c.master = {value:"", since:"", prev:[]};
+    if (!Array.isArray(c.master.prev)) c.master.prev = [];
+    if (!Array.isArray(c.comms)) c.comms = [];
+    if (!c.link || typeof c.link !== "object") c.link = {};
+    c.comms.forEach(function(m){
+      if (!Array.isArray(m.locks)) m.locks = [];
+      m.locks.forEach(function(l){ if (!Array.isArray(l.prev)) l.prev = []; });
+    });
+  }
+
+  function norm(t){
+    return String(t || "").toLowerCase()
+      .replace(/[\u00e0-\u00e3]/g,"a").replace(/[\u00e8-\u00ea]/g,"e")
+      .replace(/[\u00ec-\u00ee]/g,"i").replace(/[\u00f2-\u00f5]/g,"o")
+      .replace(/[\u00f9-\u00fb]/g,"u").replace(/\u00e7/g,"c")
+      .replace(/[^a-z0-9 ]+/g," ").replace(/\s+/g," ").trim();
+  }
+  /* data LOCAL. toISOString() e UTC: as 21h da Florida ja e o dia seguinte
+     em UTC, e o codigo apareceria "desde amanha". */
+  function today(){
+    var d = new Date(), p = function(n){ return (n < 10 ? "0" : "") + n; };
+    return d.getFullYear() + "-" + p(d.getMonth() + 1) + "-" + p(d.getDate());
+  }
+  function shortD(iso){
+    if (!iso) return "";
+    var p = String(iso).split("-");
+    if (p.length < 3) return "";
+    var M = ["jan","fev","mar","abr","mai","jun","jul","ago","set","out","nov","dez"];
+    return parseInt(p[2],10) + "/" + (M[parseInt(p[1],10)-1] || "?");
+  }
+  function uid(){ return "c" + Date.now().toString(36) + Math.random().toString(36).slice(2,6); }
+
+  function cbCopy(t){
+    try {
+      if (navigator.clipboard && navigator.clipboard.writeText){
+        navigator.clipboard.writeText(t); return true;
+      }
+    } catch(e){}
+    try {
+      var ta = document.createElement("textarea");
+      ta.value = t; ta.style.position = "fixed"; ta.style.opacity = "0";
+      document.body.appendChild(ta); ta.select();
+      document.execCommand("copy"); document.body.removeChild(ta);
+      return true;
+    } catch(e){ return false; }
+  }
+
+  function commById(id){
+    var r = null;
+    S.codes.comms.forEach(function(m){ if (m.id === id) r = m; });
+    return r;
+  }
+  function addComm(name){
+    var n = String(name || "").trim();
+    if (!n) return null;
+    var ex = null, k = norm(n);
+    S.codes.comms.forEach(function(m){ if (norm(m.name) === k) ex = m; });
+    if (ex) return ex;
+    var m = {id:uid(), name:n, locks:[]};
+    S.codes.comms.push(m);
+    S.codes.comms.sort(function(a,b){ return norm(a.name) < norm(b.name) ? -1 : 1; });
+    return m;
+  }
+  /* troca guarda o anterior com a data: cadeado que nao abre precisa do velho */
+  function setLock(comm, label, value){
+    if (!comm) return;
+    var k = norm(label), cur = null;
+    comm.locks.forEach(function(l){ if (norm(l.label) === k) cur = l; });
+    if (!cur){
+      cur = {label:label, value:"", since:"", prev:[]};
+      comm.locks.push(cur);
+    }
+    if (cur.value === value) return;
+    if (cur.value) cur.prev.unshift({value:cur.value, until:today()});
+    cur.prev = cur.prev.slice(0, 4);
+    cur.value = value;
+    cur.since = today();
+  }
+  function setMaster(value){
+    var m = S.codes.master;
+    if (m.value === value) return;
+    if (m.value) m.prev.unshift({value:m.value, until:today()});
+    m.prev = m.prev.slice(0, 4);
+    m.value = value; m.since = today();
+  }
+
+  /* ---------- barra contextual na tela do report ---------- */
+  function renderCodeStrip(){
+    var box = $("codeStrip");
+    if (!box) return;
+    var a = currentAddr();
+    if (!a || S.picking){ box.hidden = true; return; }
+    box.hidden = false;
+    box.innerHTML = "";
+
+    var top = document.createElement("div");
+    top.className = "cs-top";
+    var nm = document.createElement("div");
+    nm.className = "cs-name";
+    top.appendChild(nm);
+    var more = document.createElement("button");
+    more.type = "button"; more.className = "cs-more"; more.textContent = "Todos \u25b8";
+    more.addEventListener("click", function(){ openCodes(); });
+    top.appendChild(more);
+    box.appendChild(top);
+
+    var row = document.createElement("div");
+    row.className = "chip-row";
+
+    if (S.codes.master.value) row.appendChild(chip("Casa", S.codes.master.value));
+
+    var comm = commById(S.codes.link[a.id]);
+    if (comm){
+      nm.textContent = "\uD83D\uDD11 " + comm.name;
+      comm.locks.forEach(function(l){
+        if (l.value) row.appendChild(chip(l.label, l.value));
+      });
+      if (!comm.locks.length){
+        var add = document.createElement("button");
+        add.type = "button"; add.className = "chip";
+        var av = document.createElement("span"); av.textContent = "+ c\u00f3digo";
+        add.appendChild(av);
+        add.addEventListener("click", function(){ askLock(comm); });
+        row.appendChild(add);
+      }
+    } else {
+      nm.textContent = "\uD83D\uDD11 C\u00f3digos";
+      var b = document.createElement("button");
+      b.type = "button"; b.className = "chip";
+      var bv = document.createElement("span"); bv.textContent = "Definir condom\u00ednio";
+      b.appendChild(bv);
+      b.addEventListener("click", function(){ pickComm(a); });
+      row.appendChild(b);
+    }
+    box.appendChild(row);
+  }
+  function chip(label, value){
+    var c = document.createElement("button");
+    c.type = "button"; c.className = "chip";
+    var b = document.createElement("b"); b.textContent = label;
+    var v = document.createElement("span"); v.textContent = value;
+    c.appendChild(b); c.appendChild(v);
+    c.addEventListener("click", function(){
+      cbCopy(value); toast(label + " copiado: " + value);
+    });
+    return c;
+  }
+
+  /* ---------- tela cheia de codigos ---------- */
+  function openCodes(){ renderCodes(); openOvl("ovlCodes"); }
+
+  function renderCodes(){
+    var mv = $("masterVal"), ms = $("masterSince"), m = S.codes.master;
+    if (m.value){
+      mv.textContent = m.value; mv.className = "m-val";
+      ms.textContent = m.since ? "desde " + shortD(m.since) : "";
+    } else {
+      mv.textContent = "toque em \u270E para definir";
+      mv.className = "m-val empty-v"; ms.textContent = "";
+    }
+
+    var q = norm($("codeSearch").value), list = $("commList");
+    list.innerHTML = "";
+    var shown = S.codes.comms.filter(function(c){ return !q || norm(c.name).indexOf(q) > -1; });
+
+    if (!shown.length){
+      var e = document.createElement("div");
+      e.className = "emptyc";
+      e.textContent = S.codes.comms.length
+        ? "Nenhum condom\u00ednio com esse nome."
+        : "Nenhum condom\u00ednio ainda. Cole a mensagem do supervisor ou toque em + Condom\u00ednio.";
+      list.appendChild(e);
+      return;
+    }
+    shown.forEach(function(c){ list.appendChild(commCard(c)); });
+  }
+
+  function commCard(c){
+    var box = document.createElement("div");
+    box.className = "comm";
+
+    var h = document.createElement("h3");
+    var n = document.createElement("span"); n.className = "c-n"; n.textContent = c.name;
+    h.appendChild(n);
+    var plus = document.createElement("button");
+    plus.type = "button"; plus.className = "l-btn"; plus.textContent = "+";
+    plus.setAttribute("aria-label", "Novo c\u00f3digo");
+    plus.addEventListener("click", function(){ askLock(c); });
+    h.appendChild(plus);
+    var del = document.createElement("button");
+    del.type = "button"; del.className = "l-btn"; del.textContent = "\u00d7";
+    del.setAttribute("aria-label", "Apagar condom\u00ednio");
+    del.addEventListener("click", function(){
+      ask("Apagar " + c.name + "?",
+          "Escreva APAGAR para confirmar. Some com todos os c\u00f3digos dele.",
+          "APAGAR", "Apagar", function(v){
+        if (norm(v) !== "apagar") return;
+        S.codes.comms = S.codes.comms.filter(function(x){ return x.id !== c.id; });
+        Object.keys(S.codes.link).forEach(function(k){
+          if (S.codes.link[k] === c.id) delete S.codes.link[k];
+        });
+        save(); renderCodes(); renderCodeStrip(); toast("Apagado");
+      });
+    });
+    h.appendChild(del);
+    box.appendChild(h);
+
+    if (!c.locks.length){
+      var e = document.createElement("div");
+      e.className = "emptyc"; e.textContent = "Sem c\u00f3digo ainda \u2014 toque no +";
+      box.appendChild(e);
+    }
+
+    c.locks.forEach(function(l){
+      var r = document.createElement("div");
+      r.className = "lockrow";
+      var tap = document.createElement("button");
+      tap.type = "button"; tap.className = "l-tap";
+      var lb = document.createElement("span"); lb.className = "l-lbl"; lb.textContent = l.label;
+      var vl = document.createElement("span"); vl.className = "l-val"; vl.textContent = l.value || "\u2014";
+      tap.appendChild(lb); tap.appendChild(vl);
+      tap.addEventListener("click", function(){
+        if (!l.value) return askLock(c, l);
+        cbCopy(l.value); toast(l.label + " copiado: " + l.value);
+      });
+      r.appendChild(tap);
+      var sc = document.createElement("span");
+      sc.className = "l-since"; sc.textContent = l.since ? shortD(l.since) : "";
+      r.appendChild(sc);
+      var ed = document.createElement("button");
+      ed.type = "button"; ed.className = "l-btn"; ed.textContent = "\u270E";
+      ed.setAttribute("aria-label", "Editar " + l.label);
+      ed.addEventListener("click", function(){ askLock(c, l); });
+      r.appendChild(ed);
+      var kl = document.createElement("button");
+      kl.type = "button"; kl.className = "l-btn"; kl.textContent = "\u00d7";
+      kl.setAttribute("aria-label", "Apagar " + l.label);
+      kl.addEventListener("click", function(){
+        c.locks = c.locks.filter(function(x){ return x !== l; });
+        save(); renderCodes(); renderCodeStrip();
+      });
+      r.appendChild(kl);
+      box.appendChild(r);
+
+      if (l.prev && l.prev.length){
+        var p = document.createElement("div");
+        p.className = "prevbox";
+        p.appendChild(document.createTextNode("antes: "));
+        l.prev.forEach(function(o, i){
+          if (i) p.appendChild(document.createTextNode(" \u00b7 "));
+          var sEl = document.createElement("s"); sEl.textContent = o.value;
+          p.appendChild(sEl);
+          p.appendChild(document.createTextNode(" at\u00e9 " + shortD(o.until)));
+        });
+        box.appendChild(p);
+      }
+    });
+    return box;
+  }
+
+  function askLock(comm, lock){
+    function pedeValor(label){
+      ask(comm.name + " \u00b7 " + label,
+          (lock && lock.value) ? ("Agora: " + lock.value + ". O anterior fica guardado.")
+                               : "S\u00f3 o c\u00f3digo.",
+          "ex.: 4455", "Salvar", function(v){
+        setLock(comm, label, v.trim());
+        save(); renderCodes(); renderCodeStrip(); toast("Salvo");
+      });
+    }
+    if (lock && lock.label) return pedeValor(lock.label);
+    ask("Novo c\u00f3digo em " + comm.name, "Do que \u00e9 esse c\u00f3digo?",
+        "ex.: Gate, Lixeira, Cadeado", "Continuar", function(t){
+      pedeValor(t.trim());
+    });
+  }
+
+  /* ---------- casa <-> condominio ---------- */
+  var pickCb = null;
+  function pickComm(addr){
+    $("pickTitle").textContent = "Condom\u00ednio desta casa";
+    $("pickHelp").textContent = addr.label;
+    pickCb = function(comm){
+      S.codes.link[addr.id] = comm.id;
+      save(); renderCodeStrip(); toast(comm.name + " vinculado");
+    };
+    renderPick();
+    openOvl("ovlPick");
+  }
+  function renderPick(){
+    var l = $("pickList");
+    l.innerHTML = "";
+    if (!S.codes.comms.length){
+      var e = document.createElement("div");
+      e.className = "emptyc";
+      e.textContent = "Nenhum condom\u00ednio ainda. Toque em + Novo.";
+      l.appendChild(e);
+    }
+    S.codes.comms.forEach(function(c){
+      var b = document.createElement("button");
+      b.type = "button"; b.className = "pickrow"; b.textContent = c.name;
+      b.addEventListener("click", function(){
+        var cb = pickCb; pickCb = null;
+        closeOvl("ovlPick");
+        if (cb) cb(c);
+      });
+      l.appendChild(b);
+    });
+  }
+
+  /* ---------- parser da mensagem do supervisor ----------
+     Tolerante de proposito: NUNCA aplica sozinho. Monta a lista do
+     que muda e voce confere antes de salvar. */
+  var LOCKWORDS = [
+    ["Gate",          ["gate","portao","porton","entrada","gate code","codigo do portao"]],
+    ["Lixeira",       ["lixeira","lixo","trash","dumpster","garbage","waste","basura"]],
+    ["Piscina",       ["piscina","pool","alberca"]],
+    ["Churrasqueira", ["churrasqueira","grill","bbq","barbecue","parrilla"]],
+    ["Energia",       ["energia","eletrica","electric","breaker","panel","painel","power","luz"]],
+    ["Clubhouse",     ["clubhouse","club house","amenity","amenities","clube"]],
+    ["Correio",       ["correio","mail","mailbox","buzon"]],
+    ["Sa\u00edda",    ["saida","exit","salida"]],
+    ["Cadeado",       ["cadeado","lock","padlock","candado"]]
+  ];
+  function labelFor(line){
+    var n = " " + norm(line) + " ", best = null, len = 0, at = 1e9;
+    LOCKWORDS.forEach(function(pair){
+      pair[1].forEach(function(w){
+        var i = n.indexOf(" " + w);
+        if (i < 0) return;
+        if (w.length > len || (w.length === len && i < at)){
+          len = w.length; at = i; best = pair[0];
+        }
+      });
+    });
+    return best;
+  }
+
+  /* Palavras que NAO sao nome de lugar: rotulos de cadeado + recheio de
+     mensagem. Qualquer palavra fora dessa lista e provavel nome proprio. */
+  var FILLER = {};
+  ("bom dia boa tarde noite pessoal galera atencao atencao favor por pra para "
+   + "de do da dos das o a os as e ou em no na nos nas um uma novo nova mudou "
+   + "mudaram mudou-se trocou trocaram agora hoje amanha semana esta esse essa "
+   + "eh e_ codigo codigos code codes is are now new the to for at of and please "
+   + "guys team update updated changed change today tomorrow week from anotem "
+   + "anota anotar segue seguem obrigado thanks thx ok all todos todas casa casas "
+   + "house houses number numero n num no. pass password senha").split(" ")
+    .forEach(function(w){ if (w) FILLER[w] = 1; });
+  LOCKWORDS.forEach(function(p){
+    p[1].forEach(function(w){ w.split(" ").forEach(function(x){ FILLER[x] = 1; }); });
+  });
+
+  /* true quando a linha traz palavra desconhecida -> provavel nome de
+     condominio que ainda nao existe aqui. Nesse caso NAO herdamos o
+     condominio da linha anterior: melhor perguntar do que errar a casa. */
+  function looksLikePlace(line){
+    var w = norm(line).split(" "), i, x;
+    for (i = 0; i < w.length; i++){
+      x = w[i];
+      if (!x || /^[0-9]+$/.test(x)) continue;
+      if (!FILLER[x]) return true;
+    }
+    return false;
+  }
+  function scanCodes(text){
+    var lines = String(text || "").split(/[\r\n]+/);
+    var out = [], cur = null;
+    lines.forEach(function(line){
+      var n = norm(line);
+      if (!n) return;
+      /* condominio conhecido citado na linha manda */
+      var hit = null;
+      S.codes.comms.forEach(function(c){
+        var k = norm(c.name);
+        if (k && n.indexOf(k) > -1) hit = c;
+      });
+      if (hit) cur = hit;
+      else if (looksLikePlace(line)) cur = null;   /* nome novo: nao herda */
+      var re = /(?:^|[^0-9A-Za-z#*])([#*]?[0-9]{3,8}[#*]?)(?![0-9A-Za-z])/g, m;
+      while ((m = re.exec(line)) !== null){
+        out.push({ comm: cur, label: labelFor(line) || "Gate",
+                   value: m[1], line: line.trim() });
+      }
+    });
+    /* mesmo par citado 2x na mesma mensagem: o ultimo vence */
+    var seen = {}, ded = [];
+    for (var i = out.length - 1; i >= 0; i--){
+      var o = out[i], k = (o.comm ? o.comm.id : "?") + "|" + norm(o.label);
+      if (seen[k]) continue;
+      seen[k] = 1; ded.unshift(o);
+    }
+    ded.forEach(function(o){ refreshOld(o); });
+    return ded;
+  }
+  function refreshOld(o){
+    o.old = "";
+    if (o.comm){
+      o.comm.locks.forEach(function(l){ if (norm(l.label) === norm(o.label)) o.old = l.value; });
+    }
+    o.same = (o.old === o.value);
+    o.on = !o.same && !!o.comm;
+  }
+
+  var pending = [];
+  function renderReview(){
+    var box = $("pasteReview");
+    box.innerHTML = "";
+    if (!pending.length){
+      var e0 = document.createElement("div");
+      e0.className = "emptyc";
+      e0.textContent = "N\u00e3o achei nenhum c\u00f3digo nesse texto.";
+      box.appendChild(e0);
+      $("pasteApply").hidden = true;
+      return;
+    }
+    $("pasteApply").hidden = false;
+    pending.forEach(function(o){
+      var r = document.createElement("div");
+      r.className = "chg" + (o.old ? "" : " new");
+
+      var cb = document.createElement("input");
+      cb.type = "checkbox"; cb.checked = !!o.on;
+      cb.addEventListener("change", function(){ o.on = cb.checked; });
+      r.appendChild(cb);
+
+      var t = document.createElement("div");
+      t.className = "g-txt";
+      var who = document.createElement("b");
+      who.textContent = o.comm ? o.comm.name : "? condom\u00ednio";
+      t.appendChild(who);
+      t.appendChild(document.createTextNode(" \u00b7 " + o.label + ": "));
+      if (o.same){
+        var sm = document.createElement("s"); sm.textContent = "j\u00e1 est\u00e1 assim";
+        t.appendChild(sm);
+      } else {
+        if (o.old){
+          var os = document.createElement("s"); os.textContent = o.old;
+          t.appendChild(os);
+          t.appendChild(document.createTextNode(" \u2192 "));
+        }
+        var nv = document.createElement("code"); nv.textContent = o.value;
+        t.appendChild(nv);
+      }
+      r.appendChild(t);
+
+      var pick = document.createElement("button");
+      pick.type = "button"; pick.className = "l-btn";
+      pick.textContent = o.comm ? "\u270E" : "\u2753";
+      pick.setAttribute("aria-label", "Escolher condom\u00ednio");
+      pick.addEventListener("click", function(){
+        $("pickTitle").textContent = "De qual condom\u00ednio?";
+        $("pickHelp").textContent = o.label + ": " + o.value;
+        pickCb = function(c){ o.comm = c; refreshOld(o); renderReview(); };
+        renderPick();
+        openOvl("ovlPick");
+      });
+      r.appendChild(pick);
+      box.appendChild(r);
+    });
+  }
+
   /* ---------- wiring ---------- */
   $("note").addEventListener("input", build);
 
@@ -1898,6 +2500,82 @@ textarea:focus,input:focus,button:focus-visible,a:focus-visible{
   Array.prototype.forEach.call(document.querySelectorAll(".langs button"), function(x){
     x.setAttribute("aria-pressed", String(x.dataset.lang === S.lang));
   });
+  /* ---------- wiring: codigos ---------- */
+  $("openCodes").addEventListener("click", function(){ openCodes(); });
+  $("codesClose").addEventListener("click", function(){ closeOvl("ovlCodes"); });
+  $("codeSearch").addEventListener("input", renderCodes);
+
+  $("masterEdit").addEventListener("click", function(){
+    ask("Entrada das casas",
+        S.codes.master.value ? ("Agora: " + S.codes.master.value + ". Padr\u00e3o Florida Fun, vale pra todas.")
+                             : "Padr\u00e3o Florida Fun \u2014 o mesmo pra todas as casas.",
+        "ex.: 1234", "Salvar", function(v){
+      setMaster(v.trim());
+      save(); renderCodes(); renderCodeStrip(); toast("Salvo");
+    });
+  });
+
+  $("addCommBtn").addEventListener("click", function(){
+    ask("Novo condom\u00ednio", "S\u00f3 o nome. Os c\u00f3digos entram depois.",
+        "ex.: Storey Lake", "Adicionar", function(v){
+      var c = addComm(v);
+      save(); renderCodes();
+      if (c) askLock(c);
+    });
+  });
+
+  $("pasteCodes").addEventListener("click", function(){
+    $("pasteText").value = "";
+    $("pasteReview").innerHTML = "";
+    $("pasteApply").hidden = true;
+    pending = [];
+    openOvl("ovlPaste");
+  });
+  $("pasteCancel").addEventListener("click", function(){ closeOvl("ovlPaste"); });
+
+  $("pasteScan").addEventListener("click", function(){
+    pending = scanCodes($("pasteText").value);
+    renderReview();
+    var semComm = pending.filter(function(o){ return !o.comm; }).length;
+    $("pasteHint").textContent = !pending.length
+      ? "Nada encontrado. D\u00e1 pra cadastrar na m\u00e3o pelo + Condom\u00ednio."
+      : (semComm ? ("Confira antes de salvar. " + semComm + " sem condom\u00ednio \u2014 toque no ? pra escolher.")
+                 : "Confira e desmarque o que n\u00e3o quiser salvar.");
+  });
+
+  $("pasteApply").addEventListener("click", function(){
+    var n = 0;
+    pending.forEach(function(o){
+      if (o.on && o.comm && !o.same){ setLock(o.comm, o.label, o.value); n++; }
+    });
+    pending = [];
+    save(); renderCodes(); renderCodeStrip();
+    closeOvl("ovlPaste");
+    toast(n ? (n + (n > 1 ? " c\u00f3digos atualizados" : " c\u00f3digo atualizado")) : "Nada mudou");
+  });
+
+  $("pickCancel").addEventListener("click", function(){
+    pickCb = null; closeOvl("ovlPick");
+  });
+  $("pickNew").addEventListener("click", function(){
+    closeOvl("ovlPick");
+    ask("Novo condom\u00ednio", "S\u00f3 o nome.", "ex.: Storey Lake", "Adicionar", function(v){
+      var c = addComm(v);
+      save();
+      var cb = pickCb; pickCb = null;
+      if (c && cb) cb(c); else renderCodes();
+    });
+  });
+
+  /* a barra de codigos acompanha a casa travada, sem tocar em renderAddrs */
+  var _renderAddrs_base = renderAddrs;
+  renderAddrs = function(){
+    _renderAddrs_base.apply(null, arguments);
+    try { renderCodeStrip(); } catch(e){}
+  };
+
+  codesFix();
+
   renderAddrs();
   renderIssues();
   renderShots();
