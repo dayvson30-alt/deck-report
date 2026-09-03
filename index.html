@@ -820,10 +820,10 @@ body.editing-issues .issue .killi{display:block}
       <div class="urlbox" id="appUrl">&mdash;</div>
       <button type="button" class="mini wide" id="copyUrl">Copiar endere&ccedil;o do app</button>
       <small>No Safari, abra <b>este</b> endere&ccedil;o &rarr; Compartilhar &rarr;
-        <b>Adicionar &agrave; Tela de In&iacute;cio</b>.
-        Se voc&ecirc; tem um &iacute;cone antigo que abre outra tela,
-        <b>apague o antigo</b>: ele aponta pro banco de testes, que ficou
-        parado em agosto e tem dados separados.</small>
+        <b>Adicionar &agrave; Tela de In&iacute;cio</b>. Guarde-o <b>inteiro</b>:
+        a parte <code>?casas=</code> &eacute; o que faz suas casas voltarem
+        sozinhas se o iPhone limpar os dados. Tem &iacute;cone antigo que abre
+        outra tela? <b>Apague o antigo.</b></small>
     </div>
 
     <div class="field">
@@ -881,7 +881,7 @@ body.editing-issues .issue .killi{display:block}
 
   /* selo visivel de versao: no iPhone e a unica forma pratica de saber
      se o atalho abriu o app certo ou o banco de testes antigo */
-  var BUILD = "3set-b";
+  var BUILD = "3set-c";
 
   var $ = function(id){ return document.getElementById(id); };
 
@@ -3169,6 +3169,7 @@ body.editing-issues .issue .killi{display:block}
     $("fPhone").value = S.phone;
     $("fAddrs").value = S.addresses.map(function(a){ return a.label; }).join("\n");
     $("backupOut").hidden = true;
+    $("appUrl").textContent = appUrl();
     openOvl("ovlSet");
   });
 
@@ -3396,14 +3397,22 @@ body.editing-issues .issue .killi{display:block}
   codesFix();
 
   $("ver").textContent = "v" + BUILD;
-  (function(){
-    /* sem o "index.html" no fim: endereco limpo e o que ele deve guardar */
-    var u = location.origin + location.pathname.replace(/index\.html?$/i, "");
-    $("appUrl").textContent = u;
-    $("copyUrl").addEventListener("click", function(){
-      cbCopy(u); toast("Endere\u00e7o copiado");
-    });
-  })();
+
+  /* No iOS o app da tela de inicio tem armazenamento SEPARADO do Safari:
+     abrir por um caminho e depois pelo outro cai num cofre vazio. Por
+     isso o endereco a guardar leva o ?casas=<id> - assim a lista se
+     refaz sozinha a cada abertura, em qualquer cofre. */
+  function appUrl(){
+    var base = location.origin + location.pathname.replace(/index\.html?$/i, "");
+    var gid = "";
+    try { gid = localStorage.getItem(KEY + ".lista") || ""; } catch(e){}
+    if (!gid) gid = (location.search.match(/[?&]casas=([0-9a-zA-Z]+)/) || [])[1] || "";
+    return gid ? base + "?casas=" + gid : base;
+  }
+  $("appUrl").textContent = appUrl();
+  $("copyUrl").addEventListener("click", function(){
+    cbCopy(appUrl()); toast("Endere\u00e7o copiado");
+  });
 
   renderAddrs();
   renderIssues();
