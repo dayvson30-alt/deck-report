@@ -517,6 +517,10 @@ textarea:focus,input:focus,button:focus-visible,a:focus-visible{
 .drop.over{border-color:var(--accent);background:var(--accent-soft);color:var(--accent)}
 .drop small{display:block;margin-top:5px;font-weight:400;font-size:12px}
 .qr-hint{font:400 12px/1.5 Barlow,sans-serif;color:var(--ink-2);margin:8px 0 0}
+.issue .killi{display:none;flex:0 0 auto;width:48px;align-self:stretch;
+  border:0;border-left:1px solid var(--crit);
+  background:var(--crit-soft);color:var(--crit);font-size:19px;line-height:1}
+body.editing-issues .issue .killi{display:block}
 .ver{display:inline-block;font:600 9px/1 Barlow,sans-serif;letter-spacing:.08em;
   color:var(--ink-3);border:1px solid var(--line-strong);border-radius:4px;
   padding:3px 4px;margin-left:7px;vertical-align:1px}
@@ -555,7 +559,10 @@ textarea:focus,input:focus,button:focus-visible,a:focus-visible{
   <section>
     <div class="lbl"><span class="step">2</span><b>O que encontrei</b><i>toque, use −/+ pra quantidade</i></div>
     <div class="issues" id="issueList"></div>
-    <div class="mini-row"><button type="button" class="mini wide" id="addCustom">+ Outro problema</button></div>
+    <div class="mini-row">
+      <button type="button" class="mini" id="addCustom">+ Outro problema</button>
+      <button type="button" class="mini" id="editIssues">Apagar</button>
+    </div>
   </section>
 
   <section id="ledgerWrap" hidden>
@@ -859,7 +866,7 @@ textarea:focus,input:focus,button:focus-visible,a:focus-visible{
     lang:"en", name:"", phone:"",
     addresses:[], current:null,
     route:[], done:[], showAll:false, q:"", picking:false,
-    counts:{}, custom:[], note:"", shots:[],
+    counts:{}, types:[], note:"", shots:[],
     ledger:{}, history:[],
     codes:{ master:{value:"",since:"",prev:[]}, comms:[], link:{} }
   };
@@ -874,7 +881,7 @@ textarea:focus,input:focus,button:focus-visible,a:focus-visible{
 
   /* selo visivel de versao: no iPhone e a unica forma pratica de saber
      se o atalho abriu o app certo ou o banco de testes antigo */
-  var BUILD = "3set";
+  var BUILD = "3set-b";
 
   var $ = function(id){ return document.getElementById(id); };
 
@@ -903,6 +910,7 @@ textarea:focus,input:focus,button:focus-visible,a:focus-visible{
         S.done = Array.isArray(d.done) ? d.done : [];
         S.ledger = (d.ledger && typeof d.ledger === "object") ? d.ledger : {};
         if (d.codes && typeof d.codes === "object") S.codes = d.codes;
+        S.types = Array.isArray(d.types) ? d.types : [];
         Object.keys(S.ledger).forEach(function(k){
           if (NOCOUNT[k.split("|")[1]]) delete S.ledger[k];
         });
@@ -969,7 +977,7 @@ textarea:focus,input:focus,button:focus-visible,a:focus-visible{
         name:S.name, phone:S.phone, lang:S.lang,
         addresses:S.addresses, route:S.route, done:S.done,
         ledger:S.ledger, history:S.history.slice(0,12),
-        codes:S.codes
+        codes:S.codes, types:S.types
       }));
     } catch(e){}
   }
@@ -1089,12 +1097,13 @@ textarea:focus,input:focus,button:focus-visible,a:focus-visible{
   }
 
   function temConteudo(){
-    return Object.keys(S.counts).length > 0 || S.custom.length > 0 ||
+    return Object.keys(S.counts).length > 0 ||
            S.shots.length > 0 || $("note").value.trim() !== "";
   }
 
+  /* limpa o REPORT, nunca a biblioteca de problemas */
   function limparReport(){
-    S.counts = {}; S.custom = []; $("note").value = "";
+    S.counts = {}; $("note").value = "";
     clearShots(); unlock(); renderIssues(); build();
   }
 
@@ -1425,12 +1434,13 @@ textarea:focus,input:focus,button:focus-visible,a:focus-visible{
     ISSUES.forEach(function(it){
       box.appendChild(issueRow(it.k, it.en, it.pt, it.sev, S.counts[it.k] || 0));
     });
-    S.custom.forEach(function(c, i){
-      box.appendChild(issueRow("custom" + i, c.text, "", c.sev || "crit", c.n, true, i));
+    S.types.forEach(function(t){
+      box.appendChild(issueRow(t.k, t.text, "", t.sev || "crit",
+                               S.counts[t.k] || 0, t));
     });
   }
 
-  function issueRow(key, en, pt, sev, n, isCustom, ci){
+  function issueRow(key, en, pt, sev, n, tipo){
     var row = document.createElement("div");
     row.className = "issue sev-" + sev + (n > 0 ? " on" : "");
 
@@ -1443,7 +1453,7 @@ textarea:focus,input:focus,button:focus-visible,a:focus-visible{
       s.textContent = pt;
       nameBtn.appendChild(s);
     }
-    nameBtn.addEventListener("click", function(){ setCount(key, n > 0 ? 0 : 1, isCustom, ci); });
+    nameBtn.addEventListener("click", function(){ setCount(key, n > 0 ? 0 : 1); });
     row.appendChild(nameBtn);
 
     var qty = document.createElement("div");
@@ -1451,27 +1461,37 @@ textarea:focus,input:focus,button:focus-visible,a:focus-visible{
     var minus = document.createElement("button");
     minus.type = "button"; minus.textContent = "−";
     minus.setAttribute("aria-label","Menos " + en);
-    minus.addEventListener("click", function(){ setCount(key, Math.max(0, n - 1), isCustom, ci); });
+    minus.addEventListener("click", function(){ setCount(key, Math.max(0, n - 1)); });
     var num = document.createElement("span");
     num.textContent = n;
     var plus = document.createElement("button");
     plus.type = "button"; plus.textContent = "+";
     plus.setAttribute("aria-label","Mais " + en);
-    plus.addEventListener("click", function(){ setCount(key, n + 1, isCustom, ci); });
+    plus.addEventListener("click", function(){ setCount(key, n + 1); });
     qty.appendChild(minus); qty.appendChild(num); qty.appendChild(plus);
     row.appendChild(qty);
+
+    /* so problema criado por ele pode ser apagado, e so no modo editar:
+       na rua, com a mao molhada, um toque errado nao pode sumir com item */
+    if (tipo){
+      var kill = document.createElement("button");
+      kill.type = "button"; kill.className = "killi"; kill.textContent = "\u00d7";
+      kill.setAttribute("aria-label", "Apagar problema " + en);
+      kill.addEventListener("click", function(){
+        S.types = S.types.filter(function(x){ return x.k !== tipo.k; });
+        delete S.counts[tipo.k];
+        save(); unlock(); renderIssues(); build();
+        toast("Apagado: " + tipo.text);
+      });
+      row.appendChild(kill);
+    }
     return row;
   }
 
-  function setCount(key, n, isCustom, ci){
-    if (isCustom){
-      if (n === 0) S.custom.splice(ci, 1);
-      else S.custom[ci].n = n;
-    } else {
-      if (n === 0) delete S.counts[key];
-      else S.counts[key] = n;
-    }
-    unlock(); renderIssues(); build();
+  function setCount(key, n){
+    if (n === 0) delete S.counts[key];
+    else S.counts[key] = n;
+    save(); unlock(); renderIssues(); build();
   }
 
   /* ---------- reincidência: quantas vezes ESTE problema, NESTA casa ---------- */
@@ -1526,8 +1546,10 @@ textarea:focus,input:focus,button:focus-visible,a:focus-visible{
       if (!n) return;
       (it.sev === "crit" ? crit : warn).push(line(it[lang], n, it.k, lang));
     });
-    S.custom.forEach(function(c){
-      (c.sev === "crit" ? crit : warn).push(line(c.text, c.n, ckey(c.text), lang));
+    S.types.forEach(function(t){
+      var n = S.counts[t.k] || 0;
+      if (!n) return;
+      (t.sev === "crit" ? crit : warn).push(line(t.text, n, t.k, lang));
     });
 
     var out = [];
@@ -1625,7 +1647,9 @@ textarea:focus,input:focus,button:focus-visible,a:focus-visible{
     ISSUES.forEach(function(it){
       if (S.counts[it.k]) hits.push({k:it.k, label:it.en});
     });
-    S.custom.forEach(function(c){ hits.push({k:ckey(c.text), label:c.text}); });
+    S.types.forEach(function(t){
+      if (S.counts[t.k]) hits.push({k:t.k, label:t.text});
+    });
     if (!hits.length) return;
 
     logged = true;
@@ -2056,6 +2080,7 @@ textarea:focus,input:focus,button:focus-visible,a:focus-visible{
         return { name: c.name, locks: c.locks };
       }),
       link: link,
+      types: S.types,
       addrs: S.addresses.map(function(a){ return a.label; }),
       ledger: led
     }));
@@ -2071,7 +2096,7 @@ textarea:focus,input:focus,button:focus-visible,a:focus-visible{
 
   /* soma, nunca apaga: o mais recente ganha, o resto fica */
   function mergeIn(d){
-    var r = {comms:0, locks:0, addrs:0, led:0, link:0};
+    var r = {comms:0, locks:0, addrs:0, led:0, link:0, types:0};
     if (!d || typeof d !== "object") return r;
 
     if (d.master && d.master.value){
@@ -2108,6 +2133,13 @@ textarea:focus,input:focus,button:focus-visible,a:focus-visible{
           cur.until = l.until;
         }
       });
+    });
+
+    (d.types || []).forEach(function(t){
+      if (!t || !t.k || !t.text) return;
+      var tem = false;
+      S.types.forEach(function(x){ if (x.k === t.k) tem = true; });
+      if (!tem){ S.types.push({k:t.k, text:t.text, sev:t.sev || "crit"}); r.types++; }
     });
 
     var idOf = {};
@@ -3030,7 +3062,7 @@ textarea:focus,input:focus,button:focus-visible,a:focus-visible{
     }
     S.current = next;
     S.picking = false;
-    S.counts = {}; S.custom = []; $("note").value = "";
+    S.counts = {}; $("note").value = "";
     clearShots(); unlock(); save(); renderAddrs(); renderIssues(); renderLedger(); build();
     window.scrollTo({top:0, behavior:"smooth"});
     toast("Proxima: " + currentAddr().label);
@@ -3066,14 +3098,29 @@ textarea:focus,input:focus,button:focus-visible,a:focus-visible{
 
   $("addCustom").addEventListener("click", function(){
     ask("Outro problema",
-        "O texto vai na mensagem exatamente como voc\u00ea escrever.",
+        "Fica salvo na lista pra sempre \u2014 na pr\u00f3xima casa \u00e9 s\u00f3 tocar.",
         "Ex.: port\u00e3o da piscina n\u00e3o tranca",
         "Adicionar",
         function(v){
-          S.custom.push({text:v, n:1, sev:"crit"});
-          unlock(); renderIssues(); build();
-          toast("Adicionado");
+          var texto = v.trim();
+          if (!texto) return;
+          var k = ckey(texto), achou = null;
+          S.types.forEach(function(t){ if (t.k === k) achou = t; });
+          if (!achou){
+            achou = {k:k, text:texto, sev:"crit"};
+            S.types.push(achou);
+          }
+          S.counts[k] = (S.counts[k] || 0) + 1;
+          save(); unlock(); renderIssues(); build();
+          toast(achou.text + " \u00b7 salvo na lista");
         });
+  });
+
+  $("editIssues").addEventListener("click", function(){
+    if (!S.types.length) return toast("Nenhum problema criado por voc\u00ea ainda");
+    var on = document.body.classList.toggle("editing-issues");
+    $("editIssues").textContent = on ? "Pronto" : "Apagar";
+    toast(on ? "Toque no \u00d7 pra apagar da lista" : "Pronto");
   });
 
   $("copyBtn").addEventListener("click", function(){
@@ -3110,7 +3157,7 @@ textarea:focus,input:focus,button:focus-visible,a:focus-visible{
   });
 
   $("clearBtn").addEventListener("click", function(){
-    S.counts = {}; S.custom = []; $("note").value = "";
+    S.counts = {}; $("note").value = "";
     clearShots(); unlock(); renderIssues(); build();
     window.scrollTo({top:0, behavior:"smooth"});
     toast("Report limpo — pronto pra próxima casa");
@@ -3262,12 +3309,14 @@ textarea:focus,input:focus,button:focus-visible,a:focus-visible{
     var d = xferParse($("xferText").value);
     if (!d) return toast("Esse texto n\u00e3o \u00e9 um backup v\u00e1lido");
     var r = mergeIn(d);
-    renderCodes(); renderAddrs(); renderLedger(); renderCodeStrip(); build();
+    renderCodes(); renderAddrs(); renderIssues(); renderLedger();
+    renderCodeStrip(); build();
     closeOvl("ovlXfer");
     var p = [];
     if (r.locks) p.push(r.locks + " c\u00f3digos");
     if (r.comms) p.push(r.comms + " condom\u00ednios");
     if (r.addrs) p.push(r.addrs + " casas");
+    if (r.types) p.push(r.types + " problemas");
     if (r.led) p.push(r.led + " contagens");
     toast(p.length ? ("Importado: " + p.join(", ")) : "J\u00e1 estava tudo em dia");
   });
