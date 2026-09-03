@@ -2063,7 +2063,7 @@ textarea:focus,input:focus,button:focus-visible,a:focus-visible{
   }
   function scanCodes(text){
     var lines = String(text || "").split(/[\r\n]+/);
-    var out = [], cur = null;
+    var out = [], cur = null, blk = 0;
     lines.forEach(function(line){
       var n = norm(line);
       if (!n) return;
@@ -2073,11 +2073,11 @@ textarea:focus,input:focus,button:focus-visible,a:focus-visible{
         var k = norm(c.name);
         if (k && n.indexOf(k) > -1) hit = c;
       });
-      if (hit) cur = hit;
-      else if (looksLikePlace(line)) cur = null;   /* nome novo: nao herda */
+      if (hit){ if (hit !== cur) blk++; cur = hit; }
+      else if (looksLikePlace(line)){ cur = null; blk++; }  /* nome novo: nao herda */
       var re = /(?:^|[^0-9A-Za-z#*])([#*]?[0-9]{3,8}[#*]?)(?![0-9A-Za-z])/g, m;
       while ((m = re.exec(line)) !== null){
-        out.push({ comm: cur, label: labelFor(line) || "Gate",
+        out.push({ comm: cur, blk: blk, label: labelFor(line) || "Gate",
                    value: m[1], line: line.trim() });
       }
     });
@@ -2149,7 +2149,16 @@ textarea:focus,input:focus,button:focus-visible,a:focus-visible{
       pick.addEventListener("click", function(){
         $("pickTitle").textContent = "De qual condom\u00ednio?";
         $("pickHelp").textContent = o.label + ": " + o.value;
-        pickCb = function(c){ o.comm = c; refreshOld(o); renderReview(); };
+        pickCb = function(c){
+          var n = 0;
+          pending.forEach(function(x){
+            if (x === o || (x.blk === o.blk && !x.comm)){
+              x.comm = c; refreshOld(x); n++;
+            }
+          });
+          renderReview();
+          if (n > 1) toast(n + " linhas em " + c.name);
+        };
         renderPick();
         openOvl("ovlPick");
       });
