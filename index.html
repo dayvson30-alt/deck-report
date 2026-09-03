@@ -2061,30 +2061,116 @@ textarea:focus,input:focus,button:focus-visible,a:focus-visible{
     }
     return false;
   }
+  /* ---- classificacao de linha, CALIBRADA NA MSG REAL do supervisor
+     (02/09/2026, "*GATE CODES- Atualizados*", 16 locais). O formato dele:
+       - NOME numa linha, CODIGO na linha de baixo
+       - endereco fazendo papel de local: "109 Chaucer", "4736 Blue Diamond"
+       - numero entre parenteses que NAO e codigo: "Formosa (7905)"
+       - codigo com # e *: "*0044#", "#3400", "2317#"
+       - duas alternativas: "#8563 ou #5598"
+       - instrucao sem codigo: "Entrar por: 500 Reunion Village Blvd"
+     Cada um desses daria CODIGO ERRADO no portao com o parser antigo. ---- */
+  var RE_CODE = /(?:^|[^0-9A-Za-z#*])([#*]?[0-9]{3,8}[#*]?)(?![0-9A-Za-z])/g;
+  var RE_NOTE = /(entrar por|entrar pelo|entrada por|acesso por|enter by|enter through)/i;
+
+  /* *negrito* do WhatsApp - sem confundir com o codigo "*0044#" */
+  function stripBold(t){
+    var x = String(t).trim();
+    if (x.length > 2 && x.charAt(0) === "*" && x.charAt(x.length - 1) === "*"
+        && /[a-z]/i.test(x)) x = x.slice(1, -1).trim();
+    return x;
+  }
+
+  /* numero no inicio seguido de palavra desconhecida = numero da CASA.
+     "109 Chaucer" e endereco; "0512 gate" e codigo. */
+  function isHouseNum(line, tok, at){
+    if (at > 2) return false;
+    var after = line.slice(at + tok.length).trim().split(/\s+/)[0] || "";
+    var w = norm(after);
+    return !!w && !FILLER[w] && !/^[0-9]/.test(w);
+  }
+
+  function extractCodes(line){
+    var clean = line.replace(/\([^)]*\)/g, " ");   /* parenteses nunca sao codigo */
+    var out = [], m, tok, at;
+    RE_CODE.lastIndex = 0;
+    while ((m = RE_CODE.exec(clean)) !== null){
+      tok = m[1];
+      at = m.index + m[0].length - tok.length;
+      if (isHouseNum(clean, tok, at)) continue;
+      out.push(tok);
+    }
+    return out;
+  }
+
+  /* sobrou palavra depois de tirar codigo, parenteses e recheio?
+     entao a linha NOMEIA um lugar */
+  function leftoverWords(line, codes){
+    var t = line.replace(/\([^)]*\)/g, " ");
+    codes.forEach(function(c){ t = t.split(c).join(" "); });
+    return norm(t).split(" ").filter(function(w){
+      return w && !/^[0-9]+$/.test(w) && !FILLER[w];
+    });
+  }
+  function placeName(line, codes){
+    var t = line;
+    codes.forEach(function(c){ t = t.split(c).join(" "); });
+    return t.replace(/\s+/g, " ")
+            .replace(/^[\s:\-\u2013*]+/, "").replace(/[\s:\-\u2013*]+$/, "").trim();
+  }
+  function matchComm(nome){
+    var n = norm(nome), hit = null;
+    S.codes.comms.forEach(function(c){
+      var k = norm(c.name);
+      if (!k) return;
+      if (k === n) hit = c;
+      else if (!hit && k.length >= 6 && n.indexOf(k) > -1) hit = c;
+      else if (!hit && n.length >= 6 && k.indexOf(n) > -1) hit = c;
+    });
+    return hit;
+  }
+
   function scanCodes(text){
     var lines = String(text || "").split(/[\r\n]+/);
-    var out = [], cur = null, blk = 0;
-    lines.forEach(function(line){
-      var n = norm(line);
-      if (!n) return;
-      /* condominio conhecido citado na linha manda */
-      var hit = null;
-      S.codes.comms.forEach(function(c){
-        var k = norm(c.name);
-        if (k && n.indexOf(k) > -1) hit = c;
-      });
-      if (hit){ if (hit !== cur) blk++; cur = hit; }
-      else if (looksLikePlace(line)){ cur = null; blk++; }  /* nome novo: nao herda */
-      var re = /(?:^|[^0-9A-Za-z#*])([#*]?[0-9]{3,8}[#*]?)(?![0-9A-Za-z])/g, m;
-      while ((m = re.exec(line)) !== null){
-        out.push({ comm: cur, blk: blk, label: labelFor(line) || "Gate",
-                   value: m[1], line: line.trim() });
+    var out = [], cur = null, curName = "", blk = 0;
+
+    lines.forEach(function(raw){
+      var line = stripBold(raw);
+      if (!norm(line) && !/[0-9]/.test(line)) return;
+
+      /* instrucao de acesso: nao e codigo, mas e informacao de portao */
+      if (RE_NOTE.test(line)){
+        if (cur || curName){
+          out.push({ comm:cur, newName:curName, blk:blk, label:"Entrar por",
+                     value: line.replace(/^[^:]*:\s*/, "").trim() || line.trim(),
+                     line: line.trim() });
+        }
+        return;
+      }
+
+      var codes = extractCodes(line);
+      var rest  = leftoverWords(line, codes);
+
+      if (rest.length){                       /* a linha nomeia um lugar */
+        var nome = placeName(line, codes);
+        var hit = matchComm(nome);
+        blk++;
+        cur = hit;
+        curName = hit ? "" : nome;
+      }
+      if (codes.length){
+        out.push({ comm:cur, newName:curName, blk:blk,
+                   label: labelFor(line) || "Gate",
+                   value: codes.join(" ou "),   /* "#8563 ou #5598": as duas valem */
+                   line: line.trim() });
       }
     });
+
     /* mesmo par citado 2x na mesma mensagem: o ultimo vence */
     var seen = {}, ded = [];
     for (var i = out.length - 1; i >= 0; i--){
-      var o = out[i], k = (o.comm ? o.comm.id : "?") + "|" + norm(o.label);
+      var o = out[i];
+      var k = (o.comm ? o.comm.id : "n:" + norm(o.newName || "?")) + "|" + norm(o.label);
       if (seen[k]) continue;
       seen[k] = 1; ded.unshift(o);
     }
@@ -2097,7 +2183,7 @@ textarea:focus,input:focus,button:focus-visible,a:focus-visible{
       o.comm.locks.forEach(function(l){ if (norm(l.label) === norm(o.label)) o.old = l.value; });
     }
     o.same = (o.old === o.value);
-    o.on = !o.same && !!o.comm;
+    o.on = !o.same && (!!o.comm || !!o.newName);
   }
 
   var pending = [];
@@ -2125,8 +2211,15 @@ textarea:focus,input:focus,button:focus-visible,a:focus-visible{
       var t = document.createElement("div");
       t.className = "g-txt";
       var who = document.createElement("b");
-      who.textContent = o.comm ? o.comm.name : "? condom\u00ednio";
+      who.textContent = o.comm ? o.comm.name : (o.newName || "? condom\u00ednio");
       t.appendChild(who);
+      if (!o.comm && o.newName){
+        var tag = document.createElement("i");
+        tag.textContent = " novo";
+        tag.style.cssText = "font-style:normal;font-size:10px;letter-spacing:.06em;"
+                          + "text-transform:uppercase;color:var(--ok)";
+        t.appendChild(tag);
+      }
       t.appendChild(document.createTextNode(" \u00b7 " + o.label + ": "));
       if (o.same){
         var sm = document.createElement("s"); sm.textContent = "j\u00e1 est\u00e1 assim";
@@ -2144,7 +2237,7 @@ textarea:focus,input:focus,button:focus-visible,a:focus-visible{
 
       var pick = document.createElement("button");
       pick.type = "button"; pick.className = "l-btn";
-      pick.textContent = o.comm ? "\u270E" : "\u2753";
+      pick.textContent = (o.comm || o.newName) ? "\u270E" : "\u2753";
       pick.setAttribute("aria-label", "Escolher condom\u00ednio");
       pick.addEventListener("click", function(){
         $("pickTitle").textContent = "De qual condom\u00ednio?";
@@ -2153,7 +2246,7 @@ textarea:focus,input:focus,button:focus-visible,a:focus-visible{
           var n = 0;
           pending.forEach(function(x){
             if (x === o || (x.blk === o.blk && !x.comm)){
-              x.comm = c; refreshOld(x); n++;
+              x.comm = c; x.newName = ""; refreshOld(x); n++;
             }
           });
           renderReview();
@@ -2545,7 +2638,7 @@ textarea:focus,input:focus,button:focus-visible,a:focus-visible{
   $("pasteScan").addEventListener("click", function(){
     pending = scanCodes($("pasteText").value);
     renderReview();
-    var semComm = pending.filter(function(o){ return !o.comm; }).length;
+    var semComm = pending.filter(function(o){ return !o.comm && !o.newName; }).length;
     $("pasteHint").textContent = !pending.length
       ? "Nada encontrado. D\u00e1 pra cadastrar na m\u00e3o pelo + Condom\u00ednio."
       : (semComm ? ("Confira antes de salvar. " + semComm + " sem condom\u00ednio \u2014 toque no ? pra escolher.")
@@ -2555,7 +2648,10 @@ textarea:focus,input:focus,button:focus-visible,a:focus-visible{
   $("pasteApply").addEventListener("click", function(){
     var n = 0;
     pending.forEach(function(o){
-      if (o.on && o.comm && !o.same){ setLock(o.comm, o.label, o.value); n++; }
+      if (!o.on || o.same) return;
+      var c = o.comm || (o.newName ? addComm(o.newName) : null);
+      if (!c) return;
+      setLock(c, o.label, o.value); n++;
     });
     pending = [];
     save(); renderCodes(); renderCodeStrip();
