@@ -735,7 +735,8 @@ body.editing-issues .issue .killi{display:block}
     <p class="qr-hint" id="xferHint"></p>
     <div class="bar-inner">
       <button type="button" class="btn btn-ghost" id="xferClose">Fechar</button>
-      <button type="button" class="btn btn-primary" id="xferCopy">Copiar</button>
+      <button type="button" class="btn btn-primary" id="xferSend">Enviar</button>
+      <button type="button" class="btn btn-ghost" id="xferCopy">Copiar</button>
       <button type="button" class="btn btn-primary" id="xferGo" hidden>Importar</button>
     </div>
   </div>
@@ -881,7 +882,7 @@ body.editing-issues .issue .killi{display:block}
 
   /* selo visivel de versao: no iPhone e a unica forma pratica de saber
      se o atalho abriu o app certo ou o banco de testes antigo */
-  var BUILD = "3set-c";
+  var BUILD = "3set-d";
 
   var $ = function(id){ return document.getElementById(id); };
 
@@ -2172,8 +2173,9 @@ body.editing-issues .issue .killi{display:block}
     var qr = S.codes.comms.filter(function(c){ return c.qr; }).length;
     if (modo === "out"){
       $("xferTitle").textContent = "Backup deste aparelho";
-      $("xferHelp").textContent = "Copie e mande pra voc\u00ea mesmo no WhatsApp "
-        + "(ou email/Notas). No outro aparelho, toque em Importar e cole.";
+      $("xferHelp").textContent = "As casas voltam sozinhas pelo endere\u00e7o; "
+        + "os c\u00f3digos n\u00e3o \u2014 eles nunca saem do aparelho. Mande este "
+        + "texto pra voc\u00ea mesmo e, no outro aparelho, toque em Importar.";
       $("xferText").value = xferMake();
       $("xferText").readOnly = true;
       $("xferHint").textContent = qr
@@ -2181,6 +2183,7 @@ body.editing-issues .issue .killi{display:block}
            + "adicione de novo pela galeria no outro aparelho.")
         : "Vai tudo: c\u00f3digos, validade, casas e a contagem de reincid\u00eancia.";
       $("xferCopy").hidden = false;
+      $("xferSend").hidden = false;
       $("xferGo").hidden = true;
     } else {
       $("xferTitle").textContent = "Importar backup";
@@ -2189,6 +2192,7 @@ body.editing-issues .issue .killi{display:block}
       $("xferText").readOnly = false;
       $("xferHint").textContent = "Soma ao que j\u00e1 existe aqui. Nada \u00e9 apagado.";
       $("xferCopy").hidden = true;
+      $("xferSend").hidden = true;
       $("xferGo").hidden = false;
     }
     openOvl("ovlXfer");
@@ -3302,6 +3306,25 @@ body.editing-issues .issue .killi{display:block}
   $("xferOut").addEventListener("click", function(){ xferShow("out"); });
   $("xferIn").addEventListener("click", function(){ xferShow("in"); });
   $("xferClose").addEventListener("click", function(){ closeOvl("ovlXfer"); });
+  /* tirar o copiar-e-colar do caminho: no iPhone abre a folha de
+     compartilhar (WhatsApp pra si mesmo, Notas); no PC abre o WhatsApp
+     Web. Se nenhum dos dois der, o botao Copiar continua ali. */
+  $("xferSend").addEventListener("click", function(){
+    var t = $("xferText").value;
+    if (!t) return;
+    if (navigator.share){
+      navigator.share({ text: t }).catch(function(){});
+      return;
+    }
+    var url = "https://wa.me/?text=" + encodeURIComponent(t);
+    if (url.length > 7000){
+      cbCopy(t);
+      toast("Muito grande pra enviar \u2014 copiei, cole voc\u00ea mesmo");
+      return;
+    }
+    window.open(url, "_blank", "noopener");
+  });
+
   $("xferCopy").addEventListener("click", function(){
     cbCopy($("xferText").value);
     toast("Copiado \u2014 mande pra voc\u00ea mesmo no WhatsApp");
