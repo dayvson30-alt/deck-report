@@ -672,6 +672,10 @@ textarea:focus,input:focus,button:focus-visible,a:focus-visible{
       <button type="button" class="mini" id="pasteCodes">&#128203; Colar msg</button>
       <button type="button" class="mini" id="addCommBtn">+ Condom&iacute;nio</button>
     </div>
+    <div class="mini-row" style="margin-top:10px">
+      <button type="button" class="mini" id="xferOut">&#128190; Gerar backup</button>
+      <button type="button" class="mini" id="xferIn">&#128229; Importar</button>
+    </div>
     <p style="margin:10px 0 0;font:400 12px/1.5 Barlow,sans-serif;color:var(--ink-3)">
       Fica s&oacute; neste celular. C&oacute;digo de acesso <b>nunca</b> vai pro link de backup
       nem pro reposit&oacute;rio &mdash; link pode vazar.
@@ -705,6 +709,21 @@ textarea:focus,input:focus,button:focus-visible,a:focus-visible{
     <div class="bar-inner">
       <button type="button" class="btn btn-ghost" id="pickCancel">Cancelar</button>
       <button type="button" class="btn btn-primary" id="pickNew">+ Novo</button>
+    </div>
+  </div>
+</div>
+
+<div class="ovl" id="ovlXfer" hidden>
+  <div class="sheet">
+    <h2 id="xferTitle">Backup</h2>
+    <p id="xferHelp">.</p>
+    <textarea id="xferText" rows="5" spellcheck="false"
+              autocomplete="off" autocorrect="off" autocapitalize="off"></textarea>
+    <p class="qr-hint" id="xferHint"></p>
+    <div class="bar-inner">
+      <button type="button" class="btn btn-ghost" id="xferClose">Fechar</button>
+      <button type="button" class="btn btn-primary" id="xferCopy">Copiar</button>
+      <button type="button" class="btn btn-primary" id="xferGo" hidden>Importar</button>
     </div>
   </div>
 </div>
@@ -1437,7 +1456,6 @@ textarea:focus,input:focus,button:focus-visible,a:focus-visible{
   /* ---------- reincidência: quantas vezes ESTE problema, NESTA casa ---------- */
   function lkey(addrId, k){ return addrId + "|" + k; }
   function ckey(text){ return "c:" + text.toLowerCase().replace(/\s+/g," ").trim(); }
-  function today(){ return new Date().toISOString().slice(0, 10); }
 
   function fmtDay(iso, lang){
     if (!iso) return "";
@@ -1972,6 +1990,155 @@ textarea:focus,input:focus,button:focus-visible,a:focus-visible{
     $("qrName").textContent = comm.name;
     $("qrImg").src = d;
     openOvl("ovlQR");
+  }
+
+  /* ================= TRANSFERIR ENTRE APARELHOS =================
+     Cada aparelho tem o seu proprio armazenamento: o que ele fez no PC
+     nao aparece no celular (nada se perdeu - esta no PC). Codigo de
+     acesso NAO vai pra nuvem, entao a ponte e um bloco de texto que
+     ele mesmo carrega (WhatsApp pra si mesmo, email, Notas).
+
+     Vai no bloco: codigos, validade, vinculo casa->condominio,
+     enderecos e a CONTAGEM DE REINCIDENCIA (essa e a que doeria
+     perder - e a prova de que ele reportou 3 vezes).
+     NAO vai: imagem de QR (grande demais pra texto).
+
+     Base64 de proposito: "*33613760#" tem asterisco, e o WhatsApp
+     interpreta * como negrito e pode comer o caractere. Base64 nao
+     tem caractere que o WhatsApp mexa. */
+  var XFER_TAG = "DECK1:";
+
+  function b64enc(t){ return btoa(unescape(encodeURIComponent(t))); }
+  function b64dec(t){ return decodeURIComponent(escape(atob(t))); }
+
+  function xferMake(){
+    var labelOf = {};
+    S.addresses.forEach(function(a){ labelOf[a.id] = a.label; });
+
+    /* link e ledger sao guardados por ID, e o ID e diferente em cada
+       aparelho. Exportar por ROTULO da casa, que e igual nos dois. */
+    var link = {};
+    Object.keys(S.codes.link).forEach(function(id){
+      var c = commById(S.codes.link[id]);
+      if (labelOf[id] && c) link[labelOf[id]] = c.name;
+    });
+    var led = {};
+    Object.keys(S.ledger).forEach(function(k){
+      var p = k.split("|"), lab = labelOf[p[0]];
+      if (lab) led[lab + "|" + p.slice(1).join("|")] = S.ledger[k];
+    });
+
+    return XFER_TAG + b64enc(JSON.stringify({
+      v: 1, at: today(), name: S.name,
+      master: S.codes.master,
+      comms: S.codes.comms.map(function(c){
+        return { name: c.name, locks: c.locks };
+      }),
+      link: link,
+      addrs: S.addresses.map(function(a){ return a.label; }),
+      ledger: led
+    }));
+  }
+
+  function xferParse(txt){
+    var t = String(txt || "").replace(/\s+/g, "");
+    var i = t.indexOf(XFER_TAG);
+    if (i < 0) return null;
+    try { return JSON.parse(b64dec(t.slice(i + XFER_TAG.length))); }
+    catch(e){ return null; }
+  }
+
+  /* soma, nunca apaga: o mais recente ganha, o resto fica */
+  function mergeIn(d){
+    var r = {comms:0, locks:0, addrs:0, led:0, link:0};
+    if (!d || typeof d !== "object") return r;
+
+    if (d.master && d.master.value){
+      var mine = S.codes.master;
+      if (!mine.value || (d.master.since || "") >= (mine.since || "")){
+        if (mine.value !== d.master.value){ setMaster(d.master.value); r.locks++; }
+      }
+    }
+
+    (d.addrs || []).forEach(function(l){
+      if (!l) return;
+      var b = S.addresses.length;
+      addAddress(l);
+      if (S.addresses.length > b) r.addrs++;
+    });
+
+    (d.comms || []).forEach(function(c){
+      if (!c || !c.name) return;
+      var alvo = (norm(c.name) === "geral") ? geral() : (matchComm(c.name) || null);
+      if (!alvo){ alvo = addComm(c.name); r.comms++; }
+      (c.locks || []).forEach(function(l){
+        if (!l || !l.label) return;
+        var cur = null;
+        alvo.locks.forEach(function(x){ if (norm(x.label) === norm(l.label)) cur = x; });
+        if (!cur){
+          alvo.locks.push({ label:l.label, value:l.value || "",
+                            since:l.since || today(), until:l.until || "",
+                            prev: Array.isArray(l.prev) ? l.prev : [] });
+          r.locks++;
+        } else if ((l.since || "") > (cur.since || "") && cur.value !== l.value){
+          setLock(alvo, cur.label, l.value, l.until);
+          r.locks++;
+        } else if (l.until && !cur.until){
+          cur.until = l.until;
+        }
+      });
+    });
+
+    var idOf = {};
+    S.addresses.forEach(function(a){ idOf[norm(a.label)] = a.id; });
+
+    Object.keys(d.link || {}).forEach(function(lab){
+      var id = idOf[norm(lab)], c = matchComm(d.link[lab]);
+      if (id && c && S.codes.link[id] !== c.id){ S.codes.link[id] = c.id; r.link++; }
+    });
+
+    Object.keys(d.ledger || {}).forEach(function(k){
+      var p = k.split("|"), id = idOf[norm(p[0])];
+      if (!id) return;
+      var kk = id + "|" + p.slice(1).join("|");
+      var meu = S.ledger[kk], dele = d.ledger[k] || {};
+      if (!meu){ S.ledger[kk] = dele; r.led++; return; }
+      var n2 = Math.max(meu.n || 0, dele.n || 0);
+      var f = min2(meu.first, dele.first), u = max2(meu.last, dele.last);
+      if (n2 !== meu.n || f !== meu.first || u !== meu.last) r.led++;
+      S.ledger[kk] = {n:n2, first:f, last:u, label: meu.label || dele.label};
+    });
+
+    save();
+    return r;
+  }
+  function min2(a, b){ if (!a) return b; if (!b) return a; return a < b ? a : b; }
+  function max2(a, b){ if (!a) return b; if (!b) return a; return a > b ? a : b; }
+
+  function xferShow(modo){
+    var qr = S.codes.comms.filter(function(c){ return c.qr; }).length;
+    if (modo === "out"){
+      $("xferTitle").textContent = "Backup deste aparelho";
+      $("xferHelp").textContent = "Copie e mande pra voc\u00ea mesmo no WhatsApp "
+        + "(ou email/Notas). No outro aparelho, toque em Importar e cole.";
+      $("xferText").value = xferMake();
+      $("xferText").readOnly = true;
+      $("xferHint").textContent = qr
+        ? ("As imagens de QR (" + qr + ") N\u00c3O v\u00e3o no texto \u2014 "
+           + "adicione de novo pela galeria no outro aparelho.")
+        : "Vai tudo: c\u00f3digos, validade, casas e a contagem de reincid\u00eancia.";
+      $("xferCopy").hidden = false;
+      $("xferGo").hidden = true;
+    } else {
+      $("xferTitle").textContent = "Importar backup";
+      $("xferHelp").textContent = "Cole aqui o texto que come\u00e7a com DECK1: .";
+      $("xferText").value = "";
+      $("xferText").readOnly = false;
+      $("xferHint").textContent = "Soma ao que j\u00e1 existe aqui. Nada \u00e9 apagado.";
+      $("xferCopy").hidden = true;
+      $("xferGo").hidden = false;
+    }
+    openOvl("ovlXfer");
   }
 
   /* ---------- barra contextual na tela do report ---------- */
@@ -3063,6 +3230,27 @@ textarea:focus,input:focus,button:focus-visible,a:focus-visible{
   });
   $("qrClose").addEventListener("click", function(){ closeOvl("ovlQR"); });
   $("qrAddClose").addEventListener("click", function(){ closeOvl("ovlQRAdd"); });
+  $("xferOut").addEventListener("click", function(){ xferShow("out"); });
+  $("xferIn").addEventListener("click", function(){ xferShow("in"); });
+  $("xferClose").addEventListener("click", function(){ closeOvl("ovlXfer"); });
+  $("xferCopy").addEventListener("click", function(){
+    cbCopy($("xferText").value);
+    toast("Copiado \u2014 mande pra voc\u00ea mesmo no WhatsApp");
+  });
+  $("xferGo").addEventListener("click", function(){
+    var d = xferParse($("xferText").value);
+    if (!d) return toast("Esse texto n\u00e3o \u00e9 um backup v\u00e1lido");
+    var r = mergeIn(d);
+    renderCodes(); renderAddrs(); renderLedger(); renderCodeStrip(); build();
+    closeOvl("ovlXfer");
+    var p = [];
+    if (r.locks) p.push(r.locks + " c\u00f3digos");
+    if (r.comms) p.push(r.comms + " condom\u00ednios");
+    if (r.addrs) p.push(r.addrs + " casas");
+    if (r.led) p.push(r.led + " contagens");
+    toast(p.length ? ("Importado: " + p.join(", ")) : "J\u00e1 estava tudo em dia");
+  });
+
   $("qrFromFile").addEventListener("click", qrFile);
   $("qrFromClip").addEventListener("click", qrClip);
 
