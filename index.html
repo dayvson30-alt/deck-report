@@ -522,6 +522,14 @@ textarea:focus,input:focus,button:focus-visible,a:focus-visible{
 .drop.over{border-color:var(--accent);background:var(--accent-soft);color:var(--accent)}
 .drop small{display:block;margin-top:5px;font-weight:400;font-size:12px}
 .qr-hint{font:400 12px/1.5 Barlow,sans-serif;color:var(--ink-2);margin:8px 0 0}
+/* o resultado do import era uma linha cinza que sumia atras do teclado:
+   ele clicava e a tela parecia igual */
+.qr-hint.status{font-size:14px;font-weight:500;line-height:1.5;
+  border-radius:8px;padding:12px 13px;margin-top:10px}
+.qr-hint.status.ok{background:var(--accent-soft);border:1px solid var(--accent);
+  color:var(--accent)}
+.qr-hint.status.bad{background:var(--crit-soft);border:1px solid var(--crit);
+  color:var(--crit)}
 .issue .killi{display:none;flex:0 0 auto;width:48px;align-self:stretch;
   border:0;border-left:1px solid var(--crit);
   background:var(--crit-soft);color:var(--crit);font-size:19px;line-height:1}
@@ -914,7 +922,7 @@ body.editing-issues .issue .killi{display:block}
 
   /* selo visivel de versao: no iPhone e a unica forma pratica de saber
      se o atalho abriu o app certo ou o banco de testes antigo */
-  var BUILD = "3set-i";
+  var BUILD = "3set-j";
 
   var $ = function(id){ return document.getElementById(id); };
 
@@ -2246,8 +2254,19 @@ body.editing-issues .issue .killi{display:block}
   function min2(a, b){ if (!a) return b; if (!b) return a; return a < b ? a : b; }
   function max2(a, b){ if (!a) return b; if (!b) return a; return a > b ? a : b; }
 
+  function xferStatus(msg, ok){
+    var el = $("xferHint");
+    el.textContent = msg;
+    el.className = "qr-hint status " + (ok ? "ok" : "bad");
+    try { $("xferText").blur(); } catch(e){}          /* fecha o teclado */
+    try { el.scrollIntoView({ block: "nearest" }); } catch(e){}
+  }
+
   function xferShow(modo){
     var qr = S.codes.comms.filter(function(c){ return c.qr; }).length;
+    $("xferHint").className = "qr-hint";
+    $("xferClose").textContent = "Fechar";
+    $("xferClose").className = "btn btn-ghost";
     if (modo === "out"){
       $("xferTitle").textContent = "Backup deste aparelho";
       $("xferHelp").textContent = "As casas voltam sozinhas pelo endere\u00e7o; "
@@ -3410,13 +3429,13 @@ body.editing-issues .issue .killi{display:block}
   });
   $("xferGo").addEventListener("click", function(){
     var res = xferParse($("xferText").value);
-    if (res.erro){ $("xferHint").textContent = res.erro; return; }
+    if (res.erro){ xferStatus(res.erro, false); return; }
 
     var d = res.dados, tinha = xferResumo(d);
     if (!tinha.cod && !tinha.addrs && !tinha.types && !tinha.led){
-      $("xferHint").textContent = "O bloco \u00e9 v\u00e1lido, mas veio VAZIO \u2014 "
-        + "foi gerado num aparelho que n\u00e3o tinha nada. Gere no aparelho onde "
-        + "os c\u00f3digos aparecem (confira em Ajustes).";
+      xferStatus("O bloco \u00e9 v\u00e1lido, mas veio VAZIO \u2014 foi gerado num "
+        + "aparelho que n\u00e3o tinha nada. Gere no aparelho onde os c\u00f3digos "
+        + "aparecem (confira em Ajustes).", false);
       return;
     }
 
@@ -3431,12 +3450,18 @@ body.editing-issues .issue .killi{display:block}
     if (r.types) p.push(r.types + " problemas");
     if (r.led) p.push(r.led + " contagens");
 
-    $("xferHint").textContent =
-      "O bloco tinha " + tinha.cod + " c\u00f3digos, " + tinha.comms
-      + " condom\u00ednios e " + tinha.addrs + " casas. "
-      + (p.length ? ("Entraram agora: " + p.join(", ") + ".")
-                  : "Nada era novo \u2014 este aparelho j\u00e1 tinha tudo isso.")
-      + (r.lista ? " Buscando a sua lista de casas..." : "");
+    xferStatus(
+      (p.length ? ("\u2713 Entraram: " + p.join(", ") + ".")
+                : "Nada era novo \u2014 este aparelho j\u00e1 tinha tudo isso.")
+      + " O bloco trazia " + tinha.cod + " c\u00f3digos, " + tinha.comms
+      + " condom\u00ednios e " + tinha.addrs + " casas."
+      + (r.lista ? " Buscando a sua lista de casas..." : ""),
+      true);
+
+    /* o import terminou: nao ha mais o que fazer nesta tela */
+    $("xferGo").hidden = true;
+    $("xferClose").textContent = "Pronto";
+    $("xferClose").className = "btn btn-primary wide";
     if (r.lista) recarregarCasas();
     toast(p.length ? ("Importado: " + p.join(", ")) : "Este aparelho j\u00e1 tinha tudo");
   });
