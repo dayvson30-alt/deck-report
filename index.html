@@ -101,12 +101,16 @@ body{
 .wrap{max-width:560px;margin:0 auto;padding:0 var(--pad) 180px}
 
 /* ---------- header ---------- */
+/* No app da tela de inicio o iOS deixa a pagina comecar POR BAIXO da
+   barra de status (black-translucent + viewport-fit=cover). Sem este
+   recuo, a chave e a engrenagem ficam sob o relogio/bateria e o toque
+   vai pro sistema, nao pro app. So a barra de baixo estava protegida. */
 header{
   position:sticky;top:0;z-index:20;
   background:var(--ground);
   border-bottom:1px solid var(--line);
   margin:0 calc(var(--pad) * -1);
-  padding:14px var(--pad) 12px;
+  padding:calc(14px + env(safe-area-inset-top)) var(--pad) 12px;
   display:flex;align-items:center;gap:12px;
 }
 .mark{
@@ -389,7 +393,8 @@ textarea:focus,input:focus,button:focus-visible,a:focus-visible{
   background:rgba(4,12,11,.66);
   display:flex;align-items:flex-start;justify-content:center;
   overflow-y:auto;-webkit-overflow-scrolling:touch;
-  padding:16px;
+  padding:calc(16px + env(safe-area-inset-top)) 16px
+          calc(16px + env(safe-area-inset-bottom));
 }
 .ovl[hidden]{display:none}
 .ovl > .sheet{width:100%;max-width:560px;margin:auto 0}
@@ -902,7 +907,7 @@ body.editing-issues .issue .killi{display:block}
 
   /* selo visivel de versao: no iPhone e a unica forma pratica de saber
      se o atalho abriu o app certo ou o banco de testes antigo */
-  var BUILD = "3set-f";
+  var BUILD = "3set-g";
 
   var $ = function(id){ return document.getElementById(id); };
 
