@@ -842,6 +842,13 @@ body.editing-issues .issue .killi{display:block}
     </div>
 
     <div class="field">
+      <label for="updBtn">Vers&atilde;o</label>
+      <button type="button" class="mini wide" id="updBtn">&#8635; For&ccedil;ar atualiza&ccedil;&atilde;o</button>
+      <small>Use se o selo do cabe&ccedil;alho estiver atrasado. Limpa o cache do
+        app e recarrega. <b>N&atilde;o apaga</b> c&oacute;digos, casas nem reports.</small>
+    </div>
+
+    <div class="field">
       <label>&Iacute;cone na tela de in&iacute;cio</label>
       <div class="urlbox" id="appUrl">&mdash;</div>
       <button type="button" class="mini wide" id="copyUrl">Copiar endere&ccedil;o do app</button>
@@ -907,7 +914,7 @@ body.editing-issues .issue .killi{display:block}
 
   /* selo visivel de versao: no iPhone e a unica forma pratica de saber
      se o atalho abriu o app certo ou o banco de testes antigo */
-  var BUILD = "3set-h";
+  var BUILD = "3set-i";
 
   var $ = function(id){ return document.getElementById(id); };
 
@@ -3574,6 +3581,38 @@ body.editing-issues .issue .killi{display:block}
     return gid ? base + "?casas=" + gid : base;
   }
   $("appUrl").textContent = appUrl();
+  /* O GitHub Pages manda max-age=600: por ate 10 min o iPhone pode
+     insistir na versao velha. Isto limpa o cache do app (nunca os
+     dados) e recarrega com endereco novo, que o cache nao conhece. */
+  $("updBtn").addEventListener("click", function(){
+    $("updBtn").textContent = "Atualizando...";
+    var pronto = false;
+    function recarregar(){
+      if (pronto) return;
+      pronto = true;
+      var q = location.search.replace(/[?&]v=\d+/, "");
+      q = q ? q + "&v=" + Date.now() : "?v=" + Date.now();
+      location.replace(location.pathname + q);
+    }
+    var jobs = [];
+    try {
+      if (navigator.serviceWorker && navigator.serviceWorker.getRegistrations){
+        jobs.push(navigator.serviceWorker.getRegistrations().then(function(rs){
+          return Promise.all(rs.map(function(r){ return r.unregister(); }));
+        }));
+      }
+    } catch(e){}
+    try {
+      if (window.caches && caches.keys){
+        jobs.push(caches.keys().then(function(ks){
+          return Promise.all(ks.map(function(k){ return caches.delete(k); }));
+        }));
+      }
+    } catch(e){}
+    Promise.all(jobs).catch(function(){}).then(recarregar);
+    setTimeout(recarregar, 2500);
+  });
+
   $("copyUrl").addEventListener("click", function(){
     cbCopy(appUrl()); toast("Endere\u00e7o copiado");
   });
