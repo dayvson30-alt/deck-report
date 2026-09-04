@@ -922,7 +922,7 @@ body.editing-issues .issue .killi{display:block}
 
   /* selo visivel de versao: no iPhone e a unica forma pratica de saber
      se o atalho abriu o app certo ou o banco de testes antigo */
-  var BUILD = "3set-j";
+  var BUILD = "3set-k";
 
   var $ = function(id){ return document.getElementById(id); };
 
@@ -2092,7 +2092,14 @@ body.editing-issues .issue .killi{display:block}
      Base64 de proposito: "*33613760#" tem asterisco, e o WhatsApp
      interpreta * como negrito e pode comer o caractere. Base64 nao
      tem caractere que o WhatsApp mexa. */
-  var XFER_TAG = "DECK1:";
+  /* Etiqueta SEM dois-pontos de proposito. "DECK1:" tinha cara de
+     esquema de link (como mailto:), entao WhatsApp e Notas tratavam o
+     bloco como URL e normalizavam o esquema para MINUSCULAS - chegava
+     "deck1:" e a comparacao falhava. O conteudo vinha intacto.
+     Lemos as duas formas: bloco antigo dele continua funcionando. */
+  var XFER_TAG = "DECK1-";
+  var RE_TAG = /deck1[\s:._-]*/i;
+  var B64_OK = /[^A-Za-z0-9+/=]/g;
 
   function b64enc(t){ return btoa(unescape(encodeURIComponent(t))); }
   function b64dec(t){ return decodeURIComponent(escape(atob(t))); }
@@ -2136,15 +2143,16 @@ body.editing-issues .issue .killi{display:block}
      Agora cada caso tem uma frase propria. */
   function xferParse(txt){
     var t = String(txt || "").replace(/\s+/g, "");
-    var i = t.indexOf(XFER_TAG);
-    if (i < 0){
+    var m = t.match(RE_TAG);
+    if (!m){
       return { erro: t
-        ? "N\u00e3o achei DECK1: nesse texto. Copie o bloco INTEIRO, come\u00e7ando em DECK1:"
+        ? "N\u00e3o achei DECK1 nesse texto. Copie o bloco INTEIRO, come\u00e7ando em DECK1."
         : "Cole o bloco aqui primeiro." };
     }
-    var b = t.slice(i + XFER_TAG.length);
+    /* tira sujeira que apps de mensagem colam junto ao transformar em link */
+    var b = t.slice(m.index + m[0].length).replace(B64_OK, "");
     if (b.length < 20) return { erro: "S\u00f3 veio o come\u00e7o do bloco (" + b.length
-      + " caracteres). Copie do DECK1: at\u00e9 o fim." };
+      + " caracteres). Copie do DECK1 at\u00e9 o fim." };
 
     var txtJson;
     try { txtJson = b64dec(b); }
@@ -2154,7 +2162,7 @@ body.editing-issues .issue .killi{display:block}
     var d;
     try { d = JSON.parse(txtJson); }
     catch(e){ return { erro: "O bloco chegou incompleto (" + b.length
-      + " caracteres). Copie de novo, do DECK1: at\u00e9 o \u00faltimo caractere." }; }
+      + " caracteres). Copie de novo, do DECK1 at\u00e9 o \u00faltimo caractere." }; }
 
     if (!d || typeof d !== "object") return { erro: "Esse texto n\u00e3o \u00e9 um backup." };
     return { dados: d };
@@ -2283,7 +2291,7 @@ body.editing-issues .issue .killi{display:block}
       $("xferGo").hidden = true;
     } else {
       $("xferTitle").textContent = "Importar backup";
-      $("xferHelp").textContent = "Cole aqui o texto que come\u00e7a com DECK1: .";
+      $("xferHelp").textContent = "Cole aqui o texto que come\u00e7a com DECK1.";
       $("xferText").value = "";
       $("xferText").readOnly = false;
       $("xferHint").textContent = "Soma ao que j\u00e1 existe aqui. Nada \u00e9 apagado. "
