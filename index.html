@@ -207,12 +207,15 @@ section{margin-top:26px}
 body.editing .kill{display:block}
 .mini-row{display:flex;gap:8px;margin-top:8px;flex-wrap:wrap}
 .mini-row[hidden],.shots[hidden]{display:none}
+/* eram os elementos mais fracos da tela: fundo transparente, borda
+   pontilhada e texto acinzentado. Viraram botoes de verdade. */
 .mini{
-  flex:1 1 0;min-width:120px;min-height:44px;
-  border:1px dashed var(--line-strong);border-radius:var(--r-m);
-  background:transparent;color:var(--ink-2);
-  font-family:"Barlow Semi Condensed",sans-serif;font-weight:600;font-size:14px;
+  flex:1 1 0;min-width:120px;min-height:48px;
+  border:1px solid var(--line-strong);border-radius:var(--r-m);
+  background:var(--surface);color:var(--ink);
+  font-family:"Barlow Semi Condensed",sans-serif;font-weight:700;font-size:14px;
   letter-spacing:.04em;text-transform:uppercase;cursor:pointer;
+  box-shadow:0 1px 0 rgba(15,30,29,.04);
 }
 .mini:active{background:var(--surface-2)}
 .empty{
@@ -934,7 +937,7 @@ body.editing-issues .issue .killi{display:block}
 
   /* selo visivel de versao: no iPhone e a unica forma pratica de saber
      se o atalho abriu o app certo ou o banco de testes antigo */
-  var BUILD = "3set-l";
+  var BUILD = "3set-m";
 
   var $ = function(id){ return document.getElementById(id); };
 
