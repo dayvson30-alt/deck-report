@@ -907,7 +907,7 @@ body.editing-issues .issue .killi{display:block}
 
   /* selo visivel de versao: no iPhone e a unica forma pratica de saber
      se o atalho abriu o app certo ou o banco de testes antigo */
-  var BUILD = "3set-g";
+  var BUILD = "3set-h";
 
   var $ = function(id){ return document.getElementById(id); };
 
@@ -1220,7 +1220,7 @@ body.editing-issues .issue .killi{display:block}
         b2.addEventListener("click", function(){
           ask("Codigo da lista",
               "E a parte depois de casas= no link.",
-              "b6320233...",
+              "32 letras e numeros",
               "Carregar",
               function(v){
                 try { localStorage.setItem(KEY + ".lista", v.trim()); } catch(err){}
@@ -2099,8 +2099,12 @@ body.editing-issues .issue .killi{display:block}
       if (lab) led[lab + "|" + p.slice(1).join("|")] = S.ledger[k];
     });
 
+    var gid = "";
+    try { gid = localStorage.getItem(KEY + ".lista") || ""; } catch(e){}
+    if (!gid) gid = (location.search.match(/[?&]casas=([0-9a-zA-Z]+)/) || [])[1] || "";
+
     return XFER_TAG + b64enc(JSON.stringify({
-      v: 1, at: today(), name: S.name,
+      v: 1, at: today(), name: S.name, lista: gid,
       master: S.codes.master,
       comms: S.codes.comms.map(function(c){
         return { name: c.name, locks: c.locks };
@@ -2154,13 +2158,22 @@ body.editing-issues .issue .killi{display:block}
 
   /* soma, nunca apaga: o mais recente ganha, o resto fica */
   function mergeIn(d){
-    var r = {comms:0, locks:0, addrs:0, led:0, link:0, types:0};
+    var r = {comms:0, locks:0, addrs:0, led:0, link:0, types:0, lista:0};
     if (!d || typeof d !== "object") return r;
 
     if (d.master && d.master.value){
       var mine = S.codes.master;
       if (!mine.value || (d.master.since || "") >= (mine.since || "")){
         if (mine.value !== d.master.value){ setMaster(d.master.value); r.locks++; }
+      }
+    }
+
+    /* o aparelho novo passa a saber onde buscar as casas */
+    if (d.lista){
+      var meu = "";
+      try { meu = localStorage.getItem(KEY + ".lista") || ""; } catch(e){}
+      if (!meu){
+        try { localStorage.setItem(KEY + ".lista", d.lista); r.lista = 1; } catch(e){}
       }
     }
 
@@ -3415,7 +3428,9 @@ body.editing-issues .issue .killi{display:block}
       "O bloco tinha " + tinha.cod + " c\u00f3digos, " + tinha.comms
       + " condom\u00ednios e " + tinha.addrs + " casas. "
       + (p.length ? ("Entraram agora: " + p.join(", ") + ".")
-                  : "Nada era novo \u2014 este aparelho j\u00e1 tinha tudo isso.");
+                  : "Nada era novo \u2014 este aparelho j\u00e1 tinha tudo isso.")
+      + (r.lista ? " Buscando a sua lista de casas..." : "");
+    if (r.lista) recarregarCasas();
     toast(p.length ? ("Importado: " + p.join(", ")) : "Este aparelho j\u00e1 tinha tudo");
   });
 

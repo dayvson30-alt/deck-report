@@ -1,7 +1,6 @@
 {
   "name": "Deck Report",
   "short_name": "Deck",
-  "start_url": "./",
   "scope": "./",
   "display": "standalone",
   "orientation": "portrait",
