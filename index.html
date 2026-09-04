@@ -902,7 +902,7 @@ body.editing-issues .issue .killi{display:block}
 
   /* selo visivel de versao: no iPhone e a unica forma pratica de saber
      se o atalho abriu o app certo ou o banco de testes antigo */
-  var BUILD = "3set-e";
+  var BUILD = "3set-f";
 
   var $ = function(id){ return document.getElementById(id); };
 
@@ -2107,12 +2107,44 @@ body.editing-issues .issue .killi{display:block}
     }));
   }
 
+  /* Falhar em silencio foi o pior erro daqui: ele colava e nao sabia se
+     o bloco estava errado, se veio pela metade ou se estava vazio.
+     Agora cada caso tem uma frase propria. */
   function xferParse(txt){
     var t = String(txt || "").replace(/\s+/g, "");
     var i = t.indexOf(XFER_TAG);
-    if (i < 0) return null;
-    try { return JSON.parse(b64dec(t.slice(i + XFER_TAG.length))); }
-    catch(e){ return null; }
+    if (i < 0){
+      return { erro: t
+        ? "N\u00e3o achei DECK1: nesse texto. Copie o bloco INTEIRO, come\u00e7ando em DECK1:"
+        : "Cole o bloco aqui primeiro." };
+    }
+    var b = t.slice(i + XFER_TAG.length);
+    if (b.length < 20) return { erro: "S\u00f3 veio o come\u00e7o do bloco (" + b.length
+      + " caracteres). Copie do DECK1: at\u00e9 o fim." };
+
+    var txtJson;
+    try { txtJson = b64dec(b); }
+    catch(e){ return { erro: "O bloco chegou danificado (" + b.length
+      + " caracteres). Costuma ser cola pela metade \u2014 copie de novo, inteiro." }; }
+
+    var d;
+    try { d = JSON.parse(txtJson); }
+    catch(e){ return { erro: "O bloco chegou incompleto (" + b.length
+      + " caracteres). Copie de novo, do DECK1: at\u00e9 o \u00faltimo caractere." }; }
+
+    if (!d || typeof d !== "object") return { erro: "Esse texto n\u00e3o \u00e9 um backup." };
+    return { dados: d };
+  }
+
+  /* o que o BLOCO traz - diferente do que ENTROU (pode ja estar aqui) */
+  function xferResumo(d){
+    var cod = (d.master && d.master.value) ? 1 : 0;
+    (d.comms || []).forEach(function(c){
+      (c.locks || []).forEach(function(l){ if (l && l.value) cod++; });
+    });
+    return { cod: cod, comms: (d.comms || []).length,
+             addrs: (d.addrs || []).length, types: (d.types || []).length,
+             led: Object.keys(d.ledger || {}).length };
   }
 
   /* soma, nunca apaga: o mais recente ganha, o resto fica */
@@ -2210,7 +2242,8 @@ body.editing-issues .issue .killi{display:block}
       $("xferHelp").textContent = "Cole aqui o texto que come\u00e7a com DECK1: .";
       $("xferText").value = "";
       $("xferText").readOnly = false;
-      $("xferHint").textContent = "Soma ao que j\u00e1 existe aqui. Nada \u00e9 apagado.";
+      $("xferHint").textContent = "Soma ao que j\u00e1 existe aqui. Nada \u00e9 apagado. "
+        + "Depois de importar, o resultado aparece aqui.";
       $("xferCopy").hidden = true;
       $("xferSend").hidden = true;
       $("xferGo").hidden = false;
@@ -3351,19 +3384,34 @@ body.editing-issues .issue .killi{display:block}
     toast("Copiado \u2014 mande pra voc\u00ea mesmo no WhatsApp");
   });
   $("xferGo").addEventListener("click", function(){
-    var d = xferParse($("xferText").value);
-    if (!d) return toast("Esse texto n\u00e3o \u00e9 um backup v\u00e1lido");
+    var res = xferParse($("xferText").value);
+    if (res.erro){ $("xferHint").textContent = res.erro; return; }
+
+    var d = res.dados, tinha = xferResumo(d);
+    if (!tinha.cod && !tinha.addrs && !tinha.types && !tinha.led){
+      $("xferHint").textContent = "O bloco \u00e9 v\u00e1lido, mas veio VAZIO \u2014 "
+        + "foi gerado num aparelho que n\u00e3o tinha nada. Gere no aparelho onde "
+        + "os c\u00f3digos aparecem (confira em Ajustes).";
+      return;
+    }
+
     var r = mergeIn(d);
     renderCodes(); renderAddrs(); renderIssues(); renderLedger();
     renderCodeStrip(); build();
-    closeOvl("ovlXfer");
+
     var p = [];
     if (r.locks) p.push(r.locks + " c\u00f3digos");
     if (r.comms) p.push(r.comms + " condom\u00ednios");
     if (r.addrs) p.push(r.addrs + " casas");
     if (r.types) p.push(r.types + " problemas");
     if (r.led) p.push(r.led + " contagens");
-    toast(p.length ? ("Importado: " + p.join(", ")) : "J\u00e1 estava tudo em dia");
+
+    $("xferHint").textContent =
+      "O bloco tinha " + tinha.cod + " c\u00f3digos, " + tinha.comms
+      + " condom\u00ednios e " + tinha.addrs + " casas. "
+      + (p.length ? ("Entraram agora: " + p.join(", ") + ".")
+                  : "Nada era novo \u2014 este aparelho j\u00e1 tinha tudo isso.");
+    toast(p.length ? ("Importado: " + p.join(", ")) : "Este aparelho j\u00e1 tinha tudo");
   });
 
   $("qrFromFile").addEventListener("click", qrFile);
