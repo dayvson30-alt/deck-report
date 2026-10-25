@@ -1587,11 +1587,9 @@ body.editing-issues .issue .killi{display:block}
     var t = lang === "pt"
       ? {head:"REPORT DO DECK", fix:"PRECISA REPARO", clean:"PRECISA LIMPEZA",
          note:"Obs.", by:"Reportado por", photos:"Fotos abaixo (Timestamp Camera).",
-         stamped:"Fotos anexadas — endereço e hora carimbados em cada uma.",
          noAddr:"[ESCOLHA O ENDEREÇO]"}
       : {head:"DECK REPORT", fix:"NEEDS REPAIR", clean:"NEEDS CLEANING",
          note:"Note", by:"Reported by", photos:"Photos below (Timestamp Camera).",
-         stamped:"Photos attached — address and time stamped on each one.",
          noAddr:"[PICK THE ADDRESS]"};
 
     var addr = currentAddr();
@@ -1616,9 +1614,10 @@ body.editing-issues .issue .killi{display:block}
     if (warn.length){ out.push(""); out.push(t.clean); out = out.concat(warn); }
     var note = $("note").value.trim();
     if (note){ out.push(""); out.push(t.note + ": " + note); }
-    out.push("");
-    if (S.name) out.push(t.by + ": " + S.name);
-    out.push(S.shots.length ? t.stamped : t.photos);
+    var tail = [];
+    if (S.name) tail.push(t.by + ": " + S.name);
+    if (!S.shots.length) tail.push(t.photos);
+    if (tail.length){ out.push(""); out = out.concat(tail); }
 
     /* Link pro grupo: quem recebe toca e encaminha ao setor responsavel.
        O report vai no #hash (nao passa por servidor nenhum). */
