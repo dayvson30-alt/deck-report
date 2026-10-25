@@ -383,6 +383,16 @@ textarea:focus,input:focus,button:focus-visible,a:focus-visible{
   color:var(--crit);border:1px solid var(--crit);border-radius:99px;
   padding:1px 7px;font-variant-numeric:tabular-nums;
 }
+.rlog{
+  padding:9px 12px;border:1px solid var(--line);border-radius:var(--r-s);
+  background:var(--surface);font-size:14px;margin-bottom:6px;
+  display:flex;flex-direction:column;gap:3px;
+}
+.rlog-top{display:flex;gap:10px;align-items:baseline}
+.rlog time{font-family:"IBM Plex Mono",monospace;font-size:11px;color:var(--ink-3);font-variant-numeric:tabular-nums}
+.rlog-top i{font-style:normal;margin-left:auto;color:var(--ink-3);font-size:12px}
+.rlog b{font-weight:600}
+.rlog span{color:var(--ink-3);font-size:13px}
 .res{
   flex:none;width:32px;height:32px;margin:-4px -4px -4px 0;
   border:1px solid var(--line);border-radius:var(--r-s);
@@ -608,6 +618,12 @@ body.editing-issues .issue .killi{display:block}
   <section id="ledgerWrap" hidden>
     <div class="lbl"><b>Já reportado nesta casa</b><i>toque em ✓ quando consertarem</i></div>
     <div class="hist" id="ledger"></div>
+  </section>
+
+  <section id="logWrap" hidden>
+    <div class="lbl"><b>Hist&oacute;rico desta casa</b><i id="logCount"></i></div>
+    <div id="logList"></div>
+    <div class="mini-row"><button type="button" class="mini wide" id="logMore" hidden>Ver todos</button></div>
   </section>
 
   <section>
@@ -952,7 +968,7 @@ body.editing-issues .issue .killi{display:block}
     addresses:[], current:null,
     route:[], done:[], showAll:false, q:"", picking:false,
     counts:{}, types:[], note:"", shots:[],
-    ledger:{}, history:[],
+    ledger:{}, history:[], log:[],
     codes:{ master:{value:"",since:"",prev:[]}, comms:[], link:{} }
   };
 
@@ -966,7 +982,7 @@ body.editing-issues .issue .killi{display:block}
 
   /* selo visivel de versao: no iPhone e a unica forma pratica de saber
      se o atalho abriu o app certo ou o banco de testes antigo */
-  var BUILD = "25out-d";
+  var BUILD = "25out-h";
 
   var $ = function(id){ return document.getElementById(id); };
 
@@ -991,6 +1007,7 @@ body.editing-issues .issue .killi{display:block}
         S.lang = d.lang || "en";
         S.addresses = Array.isArray(d.addresses) ? d.addresses : [];
         S.history = Array.isArray(d.history) ? d.history : [];
+        S.log = Array.isArray(d.log) ? d.log : [];
         S.route = Array.isArray(d.route) ? d.route : [];
         S.done = Array.isArray(d.done) ? d.done : [];
         S.ledger = (d.ledger && typeof d.ledger === "object") ? d.ledger : {};
@@ -1061,7 +1078,7 @@ body.editing-issues .issue .killi{display:block}
       localStorage.setItem(KEY, JSON.stringify({
         name:S.name, phone:S.phone, lang:S.lang,
         addresses:S.addresses, route:S.route, done:S.done,
-        ledger:S.ledger, history:S.history.slice(0,12),
+        ledger:S.ledger, history:S.history.slice(0,12), log:S.log.slice(0, LOG_MAX),
         codes:S.codes, types:S.types
       }));
     } catch(e){}
@@ -1212,6 +1229,7 @@ body.editing-issues .issue .killi{display:block}
     S.route = S.route.map(troca).filter(unico);
     S.done = S.done.map(troca).filter(unico);
     if (S.current === v.id) S.current = c.id;
+    S.log.forEach(function(r){ if ((r.addr || "").toLowerCase() === low) r.addr = c.label; });
     S.addresses = S.addresses.filter(function(a){ return a !== v; });
   }
 
@@ -1746,6 +1764,7 @@ body.editing-issues .issue .killi{display:block}
   }
 
   function renderLedger(){
+    renderLog();
     var wrap = $("ledgerWrap"), box = $("ledger"), addr = currentAddr();
     box.innerHTML = "";
     if (!addr){ wrap.hidden = true; return; }
@@ -1780,6 +1799,52 @@ body.editing-issues .issue .killi{display:block}
       d.appendChild(rep); d.appendChild(b); d.appendChild(i); d.appendChild(btn);
       box.appendChild(d);
     });
+  }
+
+  /* HISTORICO COMPLETO: cada report enviado, pra provar "reportei 3x".
+     Vai pra nuvem junto (cifrado); fotos nao. */
+  var LOG_MAX = 1500;
+  var logAll = false;
+  function renderLog(){
+    var wrap = $("logWrap"), box = $("logList"), addr = currentAddr();
+    box.innerHTML = "";
+    var low = addr ? addr.label.toLowerCase() : "";
+    var rows = addr ? S.log.filter(function(r){ return (r.addr || "").toLowerCase() === low; }) : [];
+    if (!rows.length){ wrap.hidden = true; return; }
+    wrap.hidden = false;
+    $("logCount").textContent = rows.length + (rows.length > 1 ? " reports" : " report");
+
+    (logAll ? rows : rows.slice(0, 5)).forEach(function(r){
+      var d = document.createElement("div");
+      d.className = "rlog";
+      var top = document.createElement("div");
+      top.className = "rlog-top";
+      var tm = document.createElement("time");
+      tm.textContent = fmtDay(r.at, S.lang) + " \u00b7 " + (r.hr || "");
+      top.appendChild(tm);
+      if (r.fotos){
+        var f = document.createElement("i");
+        f.textContent = "\uD83D\uDCF7 " + r.fotos;
+        top.appendChild(f);
+      }
+      d.appendChild(top);
+      var it = document.createElement("b");
+      it.textContent = (r.items || []).map(function(x){
+        var known = ISSUES.filter(function(i){ return i.k === x.k; })[0];
+        return (known ? known[S.lang] : x.label) + (x.n > 1 ? " (x" + x.n + ")" : "");
+      }).join(" \u00b7 ");
+      d.appendChild(it);
+      if (r.note){
+        var n = document.createElement("span");
+        n.textContent = "\u201c" + r.note + "\u201d";
+        d.appendChild(n);
+      }
+      box.appendChild(d);
+    });
+
+    var more = $("logMore");
+    more.hidden = rows.length <= 5;
+    more.textContent = logAll ? "Mostrar s\u00f3 os 5 \u00faltimos" : "Ver todos (" + rows.length + ")";
   }
 
   function labelOf(key, e){
@@ -1817,6 +1882,19 @@ body.editing-issues .issue .killi{display:block}
       n: hits.length
     });
     S.history = S.history.slice(0, 12);
+
+    var agora = new Date();
+    S.log.unshift({
+      id: "r" + agora.getTime().toString(36) + Math.random().toString(36).slice(2, 5),
+      at: day,
+      hr: agora.toLocaleTimeString("en-US", {hour:"2-digit", minute:"2-digit"}),
+      addr: addr.label,
+      items: hits.map(function(h){ return {k:h.k, label:h.label, n:S.counts[h.k] || 1}; }),
+      note: $("note").value.trim(),
+      fotos: S.shots.length,
+      by: S.name
+    });
+    S.log = S.log.slice(0, LOG_MAX);
     save(); renderHist(); renderLedger(); renderSendState();
   }
 
@@ -2286,7 +2364,8 @@ body.editing-issues .issue .killi{display:block}
   function b64dec(t){ return decodeURIComponent(escape(atob(t))); }
 
   function xferMake(){
-    return XFER_TAG + b64enc(JSON.stringify(xferData()));
+    var d = xferData(); delete d.log;   // bloco pra colar: sem historico (ficaria enorme)
+    return XFER_TAG + b64enc(JSON.stringify(d));
   }
 
   function xferData(){
@@ -2319,7 +2398,8 @@ body.editing-issues .issue .killi{display:block}
       link: link,
       types: S.types,
       addrs: S.addresses.map(function(a){ return a.label; }),
-      ledger: led
+      ledger: led,
+      log: S.log.slice(0, LOG_MAX)
     };
   }
 
@@ -2441,8 +2521,29 @@ body.editing-issues .issue .killi{display:block}
       S.ledger[kk] = {n:n2, first:f, last:u, label: meu.label || dele.label};
     });
 
+    if (Array.isArray(d.log)){
+      var tem = {};
+      S.log.forEach(function(x){ tem[x.id] = 1; });
+      d.log.forEach(function(x){
+        if (x && x.id && !tem[x.id]){ S.log.push(x); r.log = (r.log || 0) + 1; }
+      });
+      S.log.sort(function(a, b){
+        var ka = (a.at || "") + hr24(a.hr), kb = (b.at || "") + hr24(b.hr);
+        return ka < kb ? 1 : ka > kb ? -1 : 0;
+      });
+      S.log = S.log.slice(0, LOG_MAX);
+    }
+
     save();
     return r;
+  }
+  /* "09:05 PM" -> "21:05", pra ordenar */
+  function hr24(h){
+    var m = String(h || "").match(/(\d+):(\d+)\s*(AM|PM)?/i);
+    if (!m) return "";
+    var H = parseInt(m[1], 10);
+    if (m[3]) H = H % 12 + (/pm/i.test(m[3]) ? 12 : 0);
+    return (H < 10 ? "0" : "") + H + ":" + m[2];
   }
   function min2(a, b){ if (!a) return b; if (!b) return a; return a < b ? a : b; }
   function max2(a, b){ if (!a) return b; if (!b) return a; return a > b ? a : b; }
@@ -2616,6 +2717,7 @@ body.editing-issues .issue .killi{display:block}
             if (r.addrs) p.push(r.addrs + " casas");
             if (r.locks) p.push(r.locks + " códigos");
             if (r.led) p.push(r.led + " contagens");
+            if (r.log) p.push(r.log + " reports");
             toast(p.length ? "Nuvem: voltaram " + p.join(", ") : "Nuvem: já estava tudo aqui");
           }
           return { ok:true };
@@ -3616,6 +3718,8 @@ body.editing-issues .issue .killi{display:block}
     window.scrollTo({ top:0, behavior:"smooth" });
     toast("Escolha a proxima casa");
   });
+
+  $("logMore").addEventListener("click", function(){ logAll = !logAll; renderLog(); });
 
   $("clearBtn").addEventListener("click", function(){
     S.counts = {}; $("note").value = "";
