@@ -982,7 +982,7 @@ body.editing-issues .issue .killi{display:block}
 
   /* selo visivel de versao: no iPhone e a unica forma pratica de saber
      se o atalho abriu o app certo ou o banco de testes antigo */
-  var BUILD = "25out-h";
+  var BUILD = "25out-p";
 
   var $ = function(id){ return document.getElementById(id); };
 
@@ -1697,10 +1697,10 @@ body.editing-issues .issue .killi{display:block}
     var lang = S.lang;
     var t = lang === "pt"
       ? {head:"REPORT DO DECK", fix:"PRECISA REPARO", clean:"PRECISA LIMPEZA",
-         note:"Obs.", by:"Reportado por", photos:"Fotos abaixo (Timestamp Camera).",
+         note:"Obs.", by:"Reportado por",
          noAddr:"[ESCOLHA O ENDEREÇO]"}
       : {head:"DECK REPORT", fix:"NEEDS REPAIR", clean:"NEEDS CLEANING",
-         note:"Note", by:"Reported by", photos:"Photos below (Timestamp Camera).",
+         note:"Note", by:"Reported by",
          noAddr:"[PICK THE ADDRESS]"};
 
     var addr = currentAddr();
@@ -1727,7 +1727,6 @@ body.editing-issues .issue .killi{display:block}
     if (note){ out.push(""); out.push(t.note + ": " + note); }
     var tail = [];
     if (S.name) tail.push(t.by + ": " + S.name);
-    if (!S.shots.length) tail.push(t.photos);
     if (tail.length){ out.push(""); out = out.concat(tail); }
 
     var text = out.join("\n");
