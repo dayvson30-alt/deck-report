@@ -966,7 +966,7 @@ body.editing-issues .issue .killi{display:block}
 
   /* selo visivel de versao: no iPhone e a unica forma pratica de saber
      se o atalho abriu o app certo ou o banco de testes antigo */
-  var BUILD = "25out-c";
+  var BUILD = "25out-d";
 
   var $ = function(id){ return document.getElementById(id); };
 
@@ -1177,6 +1177,42 @@ body.editing-issues .issue .killi{display:block}
       var c = matchComm(a.comm) || addComm(a.comm);
       if (c) S.codes.link[x.id] = c.id;
     });
+    if (d.dup){ try { localStorage.setItem(KEY + ".dup", JSON.stringify(d.dup)); } catch(e){} }
+    juntarRepetidas();
+  }
+
+  /* guardada: o backup da nuvem ainda traz as grafias velhas */
+  function juntarRepetidas(){
+    var dup = {};
+    try { dup = JSON.parse(localStorage.getItem(KEY + ".dup") || "{}"); } catch(e){}
+    Object.keys(dup).forEach(function(velho){ juntarCasa(velho, dup[velho]); });
+  }
+
+  /* Mesma casa salva com duas grafias ("St Kitts Cir" / "Saint Kitts
+     Circle"). Fica a certa; a contagem de reports das duas SOMA, porque
+     cada report entrou em so uma delas. */
+  function juntarCasa(velho, certo){
+    var low = velho.toLowerCase();
+    var v = S.addresses.filter(function(a){ return a.label.toLowerCase() === low; })[0];
+    if (!v) return;
+    var c = addAddress(certo);
+    if (!c || c === v) return;
+
+    Object.keys(S.ledger).forEach(function(k){
+      if (k.indexOf(v.id + "|") !== 0) return;
+      var nk = c.id + k.slice(v.id.length), a = S.ledger[k], b = S.ledger[nk];
+      S.ledger[nk] = b ? {n:(a.n || 0) + (b.n || 0), first:min2(a.first, b.first),
+                          last:max2(a.last, b.last), label:b.label || a.label} : a;
+      delete S.ledger[k];
+    });
+    if (S.codes.link[v.id] && !S.codes.link[c.id]) S.codes.link[c.id] = S.codes.link[v.id];
+    delete S.codes.link[v.id];
+    var troca = function(id){ return id === v.id ? c.id : id; };
+    var unico = function(id, i, arr){ return arr.indexOf(id) === i; };
+    S.route = S.route.map(troca).filter(unico);
+    S.done = S.done.map(troca).filter(unico);
+    if (S.current === v.id) S.current = c.id;
+    S.addresses = S.addresses.filter(function(a){ return a !== v; });
   }
 
   function commName(a){
@@ -2569,6 +2605,7 @@ body.editing-issues .issue .killi{display:block}
         if (!res.blob) return { vazio:true };
         return unseal(res.blob, k).then(function(d){
           var r = mergeIn(d);
+          juntarRepetidas();
           if (!S.name && d.name) S.name = d.name;
           if (!S.phone && d.phone) S.phone = d.phone;
           save();
