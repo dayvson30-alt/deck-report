@@ -1620,8 +1620,17 @@ body.editing-issues .issue .killi{display:block}
     if (S.name) out.push(t.by + ": " + S.name);
     out.push(S.shots.length ? t.stamped : t.photos);
 
+    /* Link pro grupo: quem recebe toca e encaminha ao setor responsavel.
+       O report vai no #hash (nao passa por servidor nenhum). */
+    var pura = out.join("\n");
+    out.push("");
+    out.push(lang === "pt" ? "CLIQUE AQUI E ENVIE PARA O SETOR RESPONSÁVEL:"
+                           : "TAP HERE AND SEND TO THE RESPONSIBLE TEAM:");
+    out.push(fwdLink(pura));
+
     var text = out.join("\n");
     $("msg").value = text;
+    prepShots(crit.concat(warn));
 
     var ready = !!addr && (crit.length + warn.length) > 0;
     $("copyBtn").setAttribute("aria-disabled", String(!ready));
@@ -1801,6 +1810,81 @@ body.editing-issues .issue .killi{display:block}
     img.src = url;
   }
 
+  var FWD_BASE = "https://dayvson30-alt.github.io/deck-report/r.html#";
+  function fwdLink(text){
+    var b = btoa(unescape(encodeURIComponent(text)));
+    return FWD_BASE + b.replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
+  }
+
+  /* PROBLEMAS EM TODAS AS FOTOS
+     O WhatsApp poe a legenda so na 1a foto. Entao cada foto ganha uma
+     faixa no topo com os itens marcados. Pre-renderiza a cada mudanca
+     (o iPhone recusa o share se houver espera depois do toque). */
+  var prepTimer = null;
+  function prepShots(lines){
+    var itens = lines.map(function(l){ return l.split("  >> ")[0]; });
+    var note = $("note").value.trim();
+    if (note) itens.push((S.lang === "pt" ? "Obs.: " : "Note: ") + note);
+    var sig = itens.join("\n");
+    clearTimeout(prepTimer);
+    prepTimer = setTimeout(function(){
+      S.shots.forEach(function(sh){
+        if (sh.sig === sig) return;
+        sh.sig = sig;
+        if (!itens.length){ sh.sendBlob = null; sh.sendUrl = null; return; }
+        stampIssues(sh, itens, function(blob){
+          if (!blob || sh.sig !== sig) return;
+          if (sh.sendUrl) URL.revokeObjectURL(sh.sendUrl);
+          sh.sendBlob = blob; sh.sendUrl = URL.createObjectURL(blob);
+        });
+      });
+    }, 250);
+  }
+
+  function stampIssues(sh, itens, cb){
+    var img = new Image();
+    img.onload = function(){
+      var w = img.naturalWidth, h = img.naturalHeight;
+      var cv = document.createElement("canvas");
+      cv.width = w; cv.height = h;
+      var ctx = cv.getContext("2d");
+      ctx.drawImage(img, 0, 0, w, h);
+
+      var pad = Math.round(w * 0.028);
+      var fs  = Math.max(13, Math.round(w * 0.031));
+      var lh  = fs * 1.22;
+      ctx.font = "600 " + fs + "px Barlow, -apple-system, sans-serif";
+      var lines = [];
+      itens.forEach(function(it){
+        var words = it.split(" "), cur = "";
+        words.forEach(function(wd){
+          var t = cur ? cur + " " + wd : wd;
+          if (ctx.measureText(t).width > w - pad * 3 && cur){ lines.push(cur); cur = "  " + wd; }
+          else cur = t;
+        });
+        if (cur) lines.push(cur);
+      });
+      var MAXL = 6;
+      if (lines.length > MAXL){
+        lines = lines.slice(0, MAXL - 1).concat(["… +" + (lines.length - MAXL + 1)]);
+      }
+
+      var boxH = pad * 2 + lines.length * lh;
+      ctx.fillStyle = "rgba(8,16,15,.76)";
+      ctx.fillRect(0, 0, w, boxH);
+      ctx.fillStyle = "#E4756A";
+      ctx.fillRect(0, 0, Math.round(w * 0.012), boxH);
+      ctx.fillStyle = "#FFFFFF";
+      ctx.textBaseline = "top";
+      var y = pad;
+      lines.forEach(function(l){ ctx.fillText(l, pad * 1.6, y); y += lh; });
+
+      cv.toBlob(cb, "image/jpeg", 0.85);
+    };
+    img.onerror = function(){ cb(null); };
+    img.src = sh.url;
+  }
+
   function renderShots(){
     var box = $("shots");
     box.innerHTML = "";
@@ -1826,6 +1910,7 @@ body.editing-issues .issue .killi{display:block}
       x.setAttribute("aria-label", "Remover foto " + (i + 1));
       x.addEventListener("click", function(){
         URL.revokeObjectURL(sh.url);
+        if (sh.sendUrl) URL.revokeObjectURL(sh.sendUrl);
         S.shots.splice(i, 1);
         renderShots();
       });
@@ -1841,7 +1926,10 @@ body.editing-issues .issue .killi{display:block}
   }
 
   function clearShots(){
-    S.shots.forEach(function(sh){ URL.revokeObjectURL(sh.url); });
+    S.shots.forEach(function(sh){
+      URL.revokeObjectURL(sh.url);
+      if (sh.sendUrl) URL.revokeObjectURL(sh.sendUrl);
+    });
     S.shots = [];
     $("camWarn").innerHTML = "";
     renderShots();
@@ -3071,7 +3159,7 @@ body.editing-issues .issue .killi{display:block}
     }
 
     var files = S.shots.map(function(sh){
-      return new File([sh.blob], sh.name, {type:"image/jpeg"});
+      return new File([sh.sendBlob || sh.blob], sh.name, {type:"image/jpeg"});
     });
 
     navigator.share({ files: files, text: text })
@@ -3090,7 +3178,7 @@ body.editing-issues .issue .killi{display:block}
   function showPic(i){
     if (!S.shots.length) return;
     picIdx = Math.max(0, Math.min(i, S.shots.length - 1));
-    $("picBig").src = S.shots[picIdx].url;
+    $("picBig").src = S.shots[picIdx].sendUrl || S.shots[picIdx].url;
     $("picCount").textContent = S.shots.length > 1
       ? "Foto " + (picIdx + 1) + " de " + S.shots.length + " — salve uma por vez"
       : "";
