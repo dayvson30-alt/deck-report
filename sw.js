@@ -1,4 +1,4 @@
-const CACHE = "deck-v4";
+const CACHE = "deck-v5";
 const ASSETS = ["./", "./index.html", "./manifest.webmanifest", "./icon-180.png", "./icon-512.png"];
 
 // addAll passa pelo cache HTTP do navegador; aqui forcamos a rede

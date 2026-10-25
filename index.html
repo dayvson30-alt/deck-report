@@ -1619,14 +1619,6 @@ body.editing-issues .issue .killi{display:block}
     if (!S.shots.length) tail.push(t.photos);
     if (tail.length){ out.push(""); out = out.concat(tail); }
 
-    /* Link pro grupo: quem recebe toca e encaminha ao setor responsavel.
-       O report vai no #hash (nao passa por servidor nenhum). */
-    var pura = out.join("\n");
-    out.push("");
-    out.push(lang === "pt" ? "CLIQUE AQUI E ENVIE PARA O SETOR RESPONSÁVEL:"
-                           : "TAP HERE AND SEND TO THE RESPONSIBLE TEAM:");
-    out.push(fwdLink(pura));
-
     var text = out.join("\n");
     $("msg").value = text;
     prepShots(crit.concat(warn));
@@ -1807,12 +1799,6 @@ body.editing-issues .issue .killi{display:block}
     };
     img.onerror = function(){ URL.revokeObjectURL(url); cb(null); };
     img.src = url;
-  }
-
-  var FWD_BASE = "https://dayvson30-alt.github.io/deck-report/r.html#";
-  function fwdLink(text){
-    var b = btoa(unescape(encodeURIComponent(text)));
-    return FWD_BASE + b.replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
   }
 
   /* PROBLEMAS EM TODAS AS FOTOS
