@@ -782,6 +782,20 @@ body.editing-issues .issue .killi{display:block}
   </div>
 </div>
 
+<div class="ovl" id="ovlCloud" hidden>
+  <div class="sheet">
+    <h2>Sua chave da nuvem</h2>
+    <p>Guarde esta chave. No celular novo: Ajustes &rarr; <b>Celular novo: tenho a chave</b>,
+      e tudo volta. <b>Sem ela n&atilde;o tem como recuperar</b> &mdash; nem eu consigo abrir.</p>
+    <div class="urlbox" id="cloudKeyBox" style="font:600 20px/1.4 'IBM Plex Mono',monospace;text-align:center;letter-spacing:.04em">&mdash;</div>
+    <div class="bar-inner">
+      <button type="button" class="btn btn-ghost" id="cloudClose">Pronto</button>
+      <button type="button" class="btn btn-ghost" id="cloudCopy">Copiar</button>
+      <a class="btn btn-primary" id="cloudWa" href="#" target="_blank" rel="noopener">Mandar pra mim</a>
+    </div>
+  </div>
+</div>
+
 <div class="ovl" id="ovlQRAdd" hidden>
   <div class="sheet">
     <h2 id="qrAddTitle">QR do condom&iacute;nio</h2>
@@ -831,7 +845,7 @@ body.editing-issues .issue .killi{display:block}
 <div class="ovl" id="ovlSet" hidden>
   <div class="sheet">
     <h2>Ajustes</h2>
-    <p>Fica salvo neste celular. Nada &eacute; enviado pra lugar nenhum.</p>
+    <p>Fica salvo neste celular. S&oacute; vai pra nuvem se voc&ecirc; ligar o backup abaixo &mdash; e vai trancado.</p>
 
     <div class="field">
       <label for="fName">Seu nome / Your name</label>
@@ -848,6 +862,20 @@ body.editing-issues .issue .killi{display:block}
       <label for="fAddrs">Endere&ccedil;os salvos</label>
       <textarea id="fAddrs" rows="7" placeholder="Um por linha"></textarea>
       <small>Um endere&ccedil;o por linha. Apagar aqui apaga da lista.</small>
+    </div>
+
+    <div class="field">
+      <label>Backup na nuvem</label>
+      <div class="vault" id="cloudBox">&mdash;</div>
+      <div class="mini-row" style="margin-top:8px">
+        <button type="button" class="mini" id="cloudOn">&#9729; Ligar</button>
+        <button type="button" class="mini" id="cloudHave">Celular novo: tenho a chave</button>
+        <button type="button" class="mini" id="cloudShow" hidden>Ver minha chave</button>
+        <button type="button" class="mini" id="cloudOff" hidden>Desligar</button>
+      </div>
+      <small>Salva sozinho casas, c&oacute;digos e a contagem de reports. Vai
+        <b>trancado com a sua chave</b> &mdash; sem ela ningu&eacute;m l&ecirc;, nem o Google.
+        Fotos n&atilde;o v&atilde;o (ficam no WhatsApp).</small>
     </div>
 
     <div class="field">
@@ -937,7 +965,7 @@ body.editing-issues .issue .killi{display:block}
 
   /* selo visivel de versao: no iPhone e a unica forma pratica de saber
      se o atalho abriu o app certo ou o banco de testes antigo */
-  var BUILD = "3set-m";
+  var BUILD = "25out-n";
 
   var $ = function(id){ return document.getElementById(id); };
 
@@ -1036,6 +1064,7 @@ body.editing-issues .issue .killi{display:block}
         codes:S.codes, types:S.types
       }));
     } catch(e){}
+    cloudSoon();
   }
 
   /* ---------- clock ---------- */
@@ -2193,6 +2222,10 @@ body.editing-issues .issue .killi{display:block}
   function b64dec(t){ return decodeURIComponent(escape(atob(t))); }
 
   function xferMake(){
+    return XFER_TAG + b64enc(JSON.stringify(xferData()));
+  }
+
+  function xferData(){
     var labelOf = {};
     S.addresses.forEach(function(a){ labelOf[a.id] = a.label; });
 
@@ -2213,8 +2246,8 @@ body.editing-issues .issue .killi{display:block}
     try { gid = localStorage.getItem(KEY + ".lista") || ""; } catch(e){}
     if (!gid) gid = (location.search.match(/[?&]casas=([0-9a-zA-Z]+)/) || [])[1] || "";
 
-    return XFER_TAG + b64enc(JSON.stringify({
-      v: 1, at: today(), name: S.name, lista: gid,
+    return {
+      v: 1, at: today(), name: S.name, phone: S.phone, lang: S.lang, lista: gid,
       master: S.codes.master,
       comms: S.codes.comms.map(function(c){
         return { name: c.name, locks: c.locks };
@@ -2223,7 +2256,7 @@ body.editing-issues .issue .killi{display:block}
       types: S.types,
       addrs: S.addresses.map(function(a){ return a.label; }),
       ledger: led
-    }));
+    };
   }
 
   /* Falhar em silencio foi o pior erro daqui: ele colava e nao sabia se
@@ -2389,6 +2422,167 @@ body.editing-issues .issue .killi{display:block}
       $("xferGo").hidden = false;
     }
     openOvl("ovlXfer");
+  }
+
+  /* ---------------------------------------------------------------
+     BACKUP NA NUVEM
+     Perdeu tudo quando a empresa trocou o celular. Agora o mesmo bloco
+     do "Gerar backup" sobe sozinho, mas CIFRADO aqui (AES-GCM, chave
+     derivada da chave de 20 letras dele). O servidor (Apps Script
+     "Deck Report - Nuvem") so ve um hash da chave e um blob ilegivel -
+     a regra "codigo nunca sai legivel do aparelho" continua valendo.
+     --------------------------------------------------------------- */
+  var CLOUD_URL = "https://script.google.com/macros/s/AKfycby9SIlx3eutbVJRSieR0tWHWsCbKJOs0LFkVwR2gA3iY6_9ZeHu0M1lG4BuSbCOIC4z3Q/exec";
+  var CK = KEY + ".nuvem", CKAT = KEY + ".nuvemAt";
+  var KEY_ABC = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";   // sem 0/O, 1/I
+  var cloudTimer = null, cloudPulling = false, cloudErr = "";
+
+  function cloudOk(){ return !!(window.crypto && crypto.subtle && window.fetch); }
+  function cloudKey(){ try { return localStorage.getItem(CK) || ""; } catch(e){ return ""; } }
+  function normKey(k){ return String(k || "").toUpperCase().replace(/[^A-Z0-9]/g, ""); }
+  function fmtKey(k){ return normKey(k).match(/.{1,4}/g).join("-"); }
+  function newKey(){
+    var r = crypto.getRandomValues(new Uint8Array(20)), s = "";
+    for (var i = 0; i < 20; i++) s += KEY_ABC[r[i] & 31];
+    return s;
+  }
+
+  function utf8(s){ return new TextEncoder().encode(s); }
+  function bytesB64(u8){
+    var s = "";
+    for (var i = 0; i < u8.length; i += 0x8000) s += String.fromCharCode.apply(null, u8.subarray(i, i + 0x8000));
+    return btoa(s);
+  }
+  function b64Bytes(b){
+    var s = atob(b), u8 = new Uint8Array(s.length);
+    for (var i = 0; i < s.length; i++) u8[i] = s.charCodeAt(i);
+    return u8;
+  }
+  function pipe(u8, stream){
+    return new Response(new Blob([u8]).stream().pipeThrough(stream)).arrayBuffer()
+      .then(function(b){ return new Uint8Array(b); });
+  }
+
+  function cloudId(k){
+    return crypto.subtle.digest("SHA-256", utf8("deck-report-id:" + k)).then(function(b){
+      return Array.prototype.map.call(new Uint8Array(b), function(x){
+        return ("0" + x.toString(16)).slice(-2);
+      }).join("");
+    });
+  }
+  function cloudAes(k){
+    return crypto.subtle.importKey("raw", utf8(k), "PBKDF2", false, ["deriveKey"])
+      .then(function(base){
+        return crypto.subtle.deriveKey(
+          { name:"PBKDF2", salt:utf8("deck-report-nuvem-v1"), iterations:150000, hash:"SHA-256" },
+          base, { name:"AES-GCM", length:256 }, false, ["encrypt", "decrypt"]);
+      });
+  }
+
+  /* blob = [1 byte: 1 se gzip][12 bytes iv][cifrado] em base64 */
+  function seal(obj, k){
+    var raw = utf8(JSON.stringify(obj));
+    var gz = window.CompressionStream ? pipe(raw, new CompressionStream("gzip")) : Promise.resolve(null);
+    return Promise.all([gz, cloudAes(k)]).then(function(r){
+      var flag = r[0] ? 1 : 0, body = r[0] || raw;
+      var iv = crypto.getRandomValues(new Uint8Array(12));
+      return crypto.subtle.encrypt({ name:"AES-GCM", iv:iv }, r[1], body).then(function(ct){
+        var c = new Uint8Array(ct), out = new Uint8Array(13 + c.length);
+        out[0] = flag; out.set(iv, 1); out.set(c, 13);
+        return bytesB64(out);
+      });
+    });
+  }
+  function unseal(b64, k){
+    var all = b64Bytes(b64);
+    return cloudAes(k).then(function(aes){
+      return crypto.subtle.decrypt({ name:"AES-GCM", iv:all.subarray(1, 13) }, aes, all.subarray(13));
+    }).then(function(pt){
+      pt = new Uint8Array(pt);
+      return all[0] === 1 ? pipe(pt, new DecompressionStream("gzip")) : pt;
+    }).then(function(u8){ return JSON.parse(new TextDecoder().decode(u8)); });
+  }
+
+  function cloudPost(body){
+    return fetch(CLOUD_URL, { method:"POST", body:JSON.stringify(body) })
+      .then(function(r){ return r.json(); });
+  }
+
+  function cloudSoon(){
+    if (!cloudKey()) return;
+    clearTimeout(cloudTimer);
+    cloudTimer = setTimeout(cloudPush, 4000);
+  }
+
+  function cloudPush(){
+    cloudTimer = null;
+    var k = cloudKey();
+    if (!k || !cloudOk()) return Promise.resolve(false);
+    if (cloudPulling){ cloudSoon(); return Promise.resolve(false); }
+    return Promise.all([cloudId(k), seal(xferData(), k)])
+      .then(function(r){ return cloudPost({ op:"put", id:r[0], blob:r[1] }); })
+      .then(function(res){
+        cloudErr = res.ok ? "" : ("servidor: " + res.erro);
+        if (res.ok){ try { localStorage.setItem(CKAT, res.at); } catch(e){} }
+        cloudStatus();
+        return !!res.ok;
+      })
+      .catch(function(){ cloudErr = "sem internet — tenta de novo sozinho"; cloudStatus(); return false; });
+  }
+
+  /* busca o que esta na nuvem e SOMA aqui (nunca apaga) */
+  function cloudPull(k, avisar){
+    if (!cloudOk()) return Promise.resolve({ erro:"Este navegador não tem criptografia." });
+    cloudPulling = true;
+    return cloudId(k)
+      .then(function(id){ return cloudPost({ op:"get", id:id }); })
+      .then(function(res){
+        if (!res.ok) return { erro:"Servidor recusou (" + res.erro + ")." };
+        if (!res.blob) return { vazio:true };
+        return unseal(res.blob, k).then(function(d){
+          var r = mergeIn(d);
+          if (!S.name && d.name) S.name = d.name;
+          if (!S.phone && d.phone) S.phone = d.phone;
+          save();
+          renderCodes(); renderAddrs(); renderIssues(); renderLedger();
+          renderCodeStrip(); build();
+          if (avisar){
+            var p = [];
+            if (r.addrs) p.push(r.addrs + " casas");
+            if (r.locks) p.push(r.locks + " códigos");
+            if (r.led) p.push(r.led + " contagens");
+            toast(p.length ? "Nuvem: voltaram " + p.join(", ") : "Nuvem: já estava tudo aqui");
+          }
+          return { ok:true };
+        }, function(){ return { erro:"Chave errada — confira as letras." }; });
+      })
+      .catch(function(){ return { erro:"Sem internet. Tente de novo." }; })
+      .then(function(r){ cloudPulling = false; return r; });
+  }
+
+  function cloudStatus(){
+    var box = $("cloudBox");
+    if (!box) return;
+    var k = cloudKey(), at = "";
+    try { at = localStorage.getItem(CKAT) || ""; } catch(e){}
+    $("cloudOn").hidden = !!k;
+    $("cloudHave").hidden = !!k;
+    $("cloudShow").hidden = !k;
+    $("cloudOff").hidden = !k;
+    if (!cloudOk()){ box.textContent = "Este navegador não suporta o backup na nuvem."; return; }
+    if (!k){ box.textContent = "Desligado — tudo só neste celular."; return; }
+    var quando = at ? new Date(at).toLocaleString("pt-BR", { day:"2-digit", month:"short", hour:"2-digit", minute:"2-digit" }) : "";
+    box.textContent = "✓ Ligado" + (quando ? " · salvo " + quando : " · salvando…")
+      + (cloudErr ? " · " + cloudErr : "");
+  }
+
+  function cloudShowKey(){
+    var k = fmtKey(cloudKey());
+    closeOvl("ovlSet");                 /* Ajustes fica por cima no DOM */
+    $("cloudKeyBox").textContent = k;
+    $("cloudWa").href = "https://wa.me/?text=" + encodeURIComponent(
+      "Chave do Deck Report (backup na nuvem): " + k);
+    openOvl("ovlCloud");
   }
 
   /* ---------- barra contextual na tela do report ---------- */
@@ -3373,10 +3567,43 @@ body.editing-issues .issue .killi{display:block}
     $("backupOut").hidden = true;
     $("appUrl").textContent = appUrl();
     renderVault();
+    cloudStatus();
     openOvl("ovlSet");
   });
 
   $("setClose").addEventListener("click", function(){ closeOvl("ovlSet"); });
+
+  $("cloudOn").addEventListener("click", function(){
+    if (!cloudOk()){ toast("Este navegador não suporta"); return; }
+    try { localStorage.setItem(CK, newKey()); localStorage.removeItem(CKAT); } catch(e){ toast("Não consegui guardar a chave"); return; }
+    cloudErr = ""; cloudStatus(); cloudShowKey();
+    cloudPush().then(function(ok){ if (ok) toast("☁ Backup na nuvem ligado"); });
+  });
+  $("cloudHave").addEventListener("click", function(){
+    closeOvl("ovlSet");
+    ask("Chave da nuvem", "Digite a chave de 20 letras que você guardou (com ou sem tracinhos).",
+        "XXXX-XXXX-XXXX-XXXX-XXXX", "Restaurar", function(v){
+      var k = normKey(v);
+      if (k.length !== 20){ toast("A chave tem 20 letras — veio " + k.length); return; }
+      toast("Buscando na nuvem…");
+      cloudPull(k, true).then(function(r){
+        if (r.erro){ toast(r.erro); return; }
+        if (r.vazio){ toast("Não achei backup com essa chave"); return; }
+        try { localStorage.setItem(CK, k); } catch(e){}
+        cloudStatus(); cloudPush();
+      });
+    });
+  });
+  $("cloudShow").addEventListener("click", cloudShowKey);
+  $("cloudOff").addEventListener("click", function(){
+    try { localStorage.removeItem(CK); localStorage.removeItem(CKAT); } catch(e){}
+    clearTimeout(cloudTimer); cloudStatus();
+    toast("Nuvem desligada neste celular");
+  });
+  $("cloudClose").addEventListener("click", function(){ closeOvl("ovlCloud"); });
+  $("cloudCopy").addEventListener("click", function(){
+    cbCopy($("cloudKeyBox").textContent); toast("Chave copiada");
+  });
 
   $("reloadBtn").addEventListener("click", function(){
     closeOvl("ovlSet");
@@ -3432,6 +3659,8 @@ body.editing-issues .issue .killi{display:block}
   /* ---------- boot ---------- */
   if (navigator.storage && navigator.storage.persist) navigator.storage.persist();
   load();
+  /* abre: soma o que outro aparelho mandou pra nuvem, depois sobe o daqui */
+  if (cloudKey()) cloudPull(cloudKey(), false).then(function(){ cloudSoon(); });
   Array.prototype.forEach.call(document.querySelectorAll(".langs button"), function(x){
     x.setAttribute("aria-pressed", String(x.dataset.lang === S.lang));
   });
